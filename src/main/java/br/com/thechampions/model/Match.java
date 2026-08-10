@@ -30,15 +30,25 @@ public class Match {
     public int getFaltantesResolvidas() { return euRecebo.size(); }
 
     /**
-     * Qualidade do match:
-     *  - perfeito: os dois lados enviam a mesma quantidade e ninguem perde raridade
-     *  - desigual: eu entrego mais raridade do que recebo
-     *  - parcial: o resto
+     * Qualidade do match, medida em "pontos de raridade" (comum=1 ... lendaria=4):
+     *
+     *  - desigual: eu entrego 2 pontos ou mais do que recebo. E o caso que a
+     *    tela precisa sinalizar — trocar uma Rara por uma Comum, por exemplo.
+     *  - perfeito: mesma quantidade dos dois lados e valor equivalente
+     *    (diferenca de no maximo 1 ponto, que e ruido normal).
+     *  - parcial: o resto — a troca ajuda, mas nao fecha simetrica.
+     *
+     * A tolerancia de 1 ponto existe de proposito: sem ela quase toda troca
+     * cairia em "desigual", e um alerta que aparece sempre nao alerta nada.
      */
+    private static final int DESEQUILIBRIO_QUE_MERECE_ALERTA = 2;
+
     public String getQualidade() {
         if (euEnvio.isEmpty() || euRecebo.isEmpty()) return "parcial";
-        if (somaRaridade(euEnvio) > somaRaridade(euRecebo)) return "desigual";
-        if (euEnvio.size() == euRecebo.size()) return "perfeito";
+
+        int diferenca = somaRaridade(euEnvio) - somaRaridade(euRecebo);
+        if (diferenca >= DESEQUILIBRIO_QUE_MERECE_ALERTA) return "desigual";
+        if (euEnvio.size() == euRecebo.size() && Math.abs(diferenca) <= 1) return "perfeito";
         return "parcial";
     }
 

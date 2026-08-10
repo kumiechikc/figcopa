@@ -30,7 +30,11 @@ public class MatchDAO {
     /** Quantas figurinhas cada lado envia numa proposta sugerida. */
     private static final int ITENS_POR_LADO = 3;
 
-    /** O que EU posso enviar: minhas repetidas que o parceiro nao tem. */
+    /**
+     * O que EU posso enviar: minhas repetidas que o parceiro nao tem.
+     * Ordenado da menor para a maior raridade — a proposta sugerida comeca
+     * pelas comuns, como faria qualquer colecionador negociando de verdade.
+     */
     private static final String SQL_EU_ENVIO = """
             SELECT u.id_usuario AS parceiro,
                    f.id_figurinha, f.numero_album, f.nome_jogador, f.selecao,
@@ -50,7 +54,7 @@ public class MatchDAO {
                       WHERE dele.id_usuario = u.id_usuario
                         AND dele.id_figurinha = f.id_figurinha
                         AND dele.quantidade > 0)
-             ORDER BY u.id_usuario, r.ordem DESC, f.nome_jogador
+             ORDER BY u.id_usuario, r.ordem ASC, f.nome_jogador
             """;
 
     /** O que EU recebo: repetidas do parceiro que faltam no meu album. */
