@@ -103,6 +103,26 @@ function contratosDoCss() {
     }
   }
 
+  // Classe presente nao prova estilo aplicado. ".avatar-g" so define tamanho —
+  // o circulo e o gradiente vem de ".avatar" — entao usar o modificador sozinho
+  // rende um texto solto, com a classe certa e nenhuma aparencia.
+  console.log('\n== O estilo realmente pegou ==');
+
+  const APARENCIA = [
+    ['/app.html?demo=1#/perfil',  '.avatar-g',          'borderRadius',    v => v.includes('50%'),      'circulo'],
+    ['/app.html?demo=1#/perfil',  '.avatar-g',          'backgroundImage', v => v.includes('gradient'), 'gradiente'],
+    ['/app.html?demo=1#/pacotes', '.pacote-card .arte', 'borderTopWidth',  v => parseFloat(v) > 0,      'moldura'],
+    ['/app.html?demo=1#/trocas',  '.fig-linha',         'borderLeftWidth', v => parseFloat(v) >= 3,     'faixa de raridade']
+  ];
+
+  for (const [rota, seletor, prop, valido, oque] of APARENCIA) {
+    await page.goto(BASE + rota, { waitUntil: 'networkidle' });
+    await page.waitForSelector(seletor, { timeout: 5000 }).catch(() => {});
+    const valor = await page.locator(seletor).first()
+      .evaluate((el, p) => getComputedStyle(el)[p], prop).catch(() => null);
+    checar(`${seletor} tem ${oque}`, valor !== null && valido(valor), String(valor).slice(0, 34));
+  }
+
   console.log('\n== A revelacao realmente anima ==');
   await page.goto(BASE + '/app.html?demo=1#/pacotes', { waitUntil: 'networkidle' });
   await page.locator('[data-abrir]').first().click();

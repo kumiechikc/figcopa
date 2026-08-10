@@ -908,7 +908,11 @@ svg.icone-g { width: 20px; height: 20px; }
 }
 
 @media (max-width: 860px) {
-  .app { grid-template-columns: 1fr; }
+  /* grid-template-rows: sem isto o align-content padrao (stretch) divide a
+     sobra de altura do min-height:100vh entre as duas linhas, e numa pagina
+     curta a barra de navegacao incha para 200px+ antes do conteudo comecar.
+     "auto 1fr" prende a barra ao seu conteudo e da o resto para a pagina. */
+  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .grade-2, .grade-3, .grade-4 { grid-template-columns: 1fr; }
 
   /* Item de grid tem min-width:auto por padrao e cresce com o conteudo.

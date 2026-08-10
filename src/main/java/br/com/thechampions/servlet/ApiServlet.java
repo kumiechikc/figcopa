@@ -286,8 +286,10 @@ public class ApiServlet extends HttpServlet {
                 .put("idParceiro", parceiro.getId())
                 .put("nome", parceiro.getNome())
                 .put("reputacao", parceiro.getReputacaoMedia())
-                .put("qualidade", t.getStatusExibicao())
+                // Nao ha "qualidade" numa troca gravada: qualidade e a nota que o
+                // matching da a uma sugestao. O que importa aqui e o estado dela.
                 .put("status", t.getStatus())
+                .put("statusExibicao", t.getStatusExibicao())
                 .put("euConfirmei", euConfirmei)
                 .put("parceiroConfirmou", parceiroConfirmou)
                 .bruto("recebo", Json.lista(euRecebo, Json::daFigurinha))
