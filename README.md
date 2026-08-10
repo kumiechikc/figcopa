@@ -83,8 +83,24 @@ figcopa/
 ```
 
 ¹ Gerados por `./sincronizar-vitrine.sh` — a fonte de verdade é a pasta `webapp/`. Rode o
-script depois de mexer no `app.css` ou no `icones.jsp`; o workflow do Pages roda sozinho
-antes de publicar.
+script depois de mexer no `app.css`, no `icones.jsp` ou no `revelacao.js`; o workflow do
+Pages roda sozinho antes de publicar.
+
+### O contrato entre a vitrine e o `app.css`
+
+A vitrine reaproveita a folha de estilo da aplicação, e o CSS **assume uma estrutura
+interna** em vários componentes: `.pacote-card` espera um `.arte` ao lado do texto,
+`.troca-lados` é um grid de três colunas (envio, seta, recebimento), e `.carta-flip` só gira
+se tiver `.giro`/`.verso`/`.frente` dentro.
+
+Quando a vitrine desenha o markup por conta própria, nada quebra ruidosamente — o componente
+só aparece sem estilo, ou sem a animação. Foi assim que a revelação do pacote ficou sem virar
+carta nenhuma: o teste olhava a classe `.virada`, que era mesmo aplicada, enquanto o CSS
+esperava um `.giro` que nunca existiu.
+
+`e2e-contrato.js` lê os seletores descendentes do próprio `app.css` e cobra que a vitrine os
+produza — um componente novo entra na checagem sozinho. Ele também mede a animação de fato
+(o `transform` computado antes e depois do giro), em vez de confiar na classe.
 
 ---
 

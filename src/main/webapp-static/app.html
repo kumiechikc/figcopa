@@ -24,19 +24,33 @@
 <div id="faixa"></div>
 <div class="app" id="app"></div>
 
+<!-- Coreografia da revelacao, compartilhada com a tela JSP. Carregada como
+     script classico (nao modulo) porque e o mesmo arquivo que o Tomcat serve. -->
+<script src="./assets/js/revelacao.js"></script>
+
 <script type="module">
 import { api } from './assets/js/api.js';
-import { carta, escapar, moeda } from './assets/js/components.js';
+import { carta, figLinha, escapar, moeda } from './assets/js/components.js';
 
 const raiz = document.getElementById('app');
 
 // ---------------------------------------------------------------- utilidades
 
-const icone = n => `<svg class="icone"><use href="#i-${n}"/></svg>`;
+const icone = (n, classe = 'icone') => `<svg class="${classe}"><use href="#i-${n}"/></svg>`;
 
 function iniciais(nome) {
   return nome.split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
 }
+
+// O backend classifica a troca em perfeito/parcial/desigual (Match.getQualidade).
+// A tela traduz para o que o usuario lê — a string crua não serve de rótulo.
+const QUALIDADE = {
+  perfeito: ['tag-sucesso', 'Troca equilibrada'],
+  parcial:  ['tag-neutro',  'Troca parcial'],
+  desigual: ['tag-aviso',   'Você entrega mais']
+};
+const qualidadeTag    = q => (QUALIDADE[q] || QUALIDADE.parcial)[0];
+const rotuloQualidade = q => (QUALIDADE[q] || QUALIDADE.parcial)[1];
 
 const ROTAS = [
   ['dashboard', 'Dashboard',            'dashboard', 'Principal'],
@@ -81,6 +95,28 @@ function sidebar(ativa, usuario, contadores) {
   </aside>`;
 }
 
+/**
+ * Os dois lados de uma troca. O grid do CSS tem tres colunas — envio, seta,
+ * recebimento — e a do meio tem 34px: entregar so dois filhos joga o segundo
+ * lado dentro da coluna da seta e espreme a coluna inteira.
+ */
+function trocaLados(m) {
+  const coluna = (titulo, nota, itens) => `
+    <div>
+      <h4>${titulo} <span class="secundario">${nota}</span></h4>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${itens.map(figLinha).join('')}
+      </div>
+    </div>`;
+
+  return `
+    <div class="troca-lados">
+      ${coluna('Você envia', '(das suas repetidas)', m.envio)}
+      <div class="seta">${icone('troca', 'icone icone-g')}</div>
+      ${coluna('Você recebe', '(faltantes suas)', m.recebo)}
+    </div>`;
+}
+
 function topbar(titulo) {
   return `<div class="topbar">
     <div class="topbar-titulo"><h1>${escapar(titulo)}</h1></div>
@@ -118,11 +154,18 @@ async function telaDashboard() {
            data-alvo="${Math.round(r.obtidas / r.total * 100)}%"></i></div>
     </div>`).join('');
 
-  const avisos = notificacoes.map(n => `
-    <div class="notificacao">
-      <span>${escapar(n.texto)}</span>
-      <small class="secundario pequeno">${escapar(n.quando)}</small>
-    </div>`).join('');
+  const ICONE_AVISO = { troca: 'troca', match: 'usuario', pacote: 'pacote' };
+
+  const avisos = notificacoes.length
+    ? notificacoes.map(n => `
+        <div class="notificacao ${n.lida ? '' : 'nao-lida'}">
+          <span class="ic">${icone(ICONE_AVISO[n.tipo] || 'sino')}</span>
+          <div>
+            <p>${escapar(n.texto)}</p>
+            <span class="quando">${escapar(n.quando)}</span>
+          </div>
+        </div>`).join('')
+    : '<p class="vazio">Nenhum aviso novo.</p>';
 
   const linhas = historico.slice(0, 4).map(t => `
     <tr>
@@ -147,7 +190,7 @@ async function telaDashboard() {
     <div class="grade grade-2" style="margin-top:24px">
       <section class="card">
         <div class="card-cabecalho"><h2>Coleção por raridade</h2></div>
-        <div class="quebra-raridade" style="display:grid;gap:14px">${barras}</div>
+        <div style="display:grid;gap:14px">${barras}</div>
       </section>
       <section class="card">
         <div class="card-cabecalho"><h2>Notificações</h2></div>
@@ -207,38 +250,68 @@ async function telaAlbum(filtros) {
 async function telaPacotes() {
   const pacotes = await api.pacotes();
 
-  const cards = pacotes.map(p => `
-    <div class="pacote-card ${p.disponivel ? '' : 'apenas-leitor'}">
-      <div class="deck">${icone('pacote')}</div>
-      <h3>${escapar(p.nome)}</h3>
-      <p class="secundario pequeno">${escapar(p.descricao)}</p>
-      ${p.disponivel
-        ? `<button class="btn btn-primario btn-bloco" data-abrir="${p.id}">Abrir pacote</button>`
-        : `<button class="btn btn-secundario btn-bloco" disabled>Indisponível</button>`}
-    </div>`).join('');
+  // .arte e o quadradinho da esquerda; a variante muda a cor conforme o tipo.
+  const ARTE = { ESPECIAL: ['especial', 'brilho'], DIARIO: ['diario', 'presente'] };
+
+  const cards = pacotes.map(p => {
+    const [variante, ic] = ARTE[p.tipo] || ['padrao', 'pacote'];
+    return `
+    <article class="pacote-card ${p.disponivel ? '' : 'esgotado'}">
+      <span class="arte ${variante}"><svg class="icone icone-g"><use href="#i-${ic}"/></svg></span>
+      <div style="flex:1;min-width:0">
+        <b style="font-family:'Saira',sans-serif;font-size:13px">${escapar(p.nome)}</b>
+        <p class="secundario pequeno" style="margin:2px 0 8px">${escapar(p.descricao)}</p>
+        ${p.disponivel
+          ? `<button class="btn ${p.tipo === 'ESPECIAL' ? 'btn-primario' : 'btn-secundario'} btn-bloco"
+                     style="padding:7px 12px;font-size:12px" data-abrir="${p.id}">
+               ${icone('pacote')} Abrir agora
+             </button>`
+          : `<button class="btn btn-secundario btn-bloco"
+                     style="padding:7px 12px;font-size:12px" disabled>Indisponível</button>`}
+      </div>
+    </article>`;
+  }).join('');
 
   await moldura('pacotes', 'Abrir Pacotes', `
     <div id="revelacao"></div>
-    <div class="grade grade-3">${cards}</div>`);
+    <section class="card">
+      <div class="card-cabecalho"><h2>Seus pacotes fechados</h2></div>
+      ${cards || '<p class="vazio">Nenhum pacote fechado no momento.</p>'}
+    </section>`);
 
   raiz.querySelectorAll('[data-abrir]').forEach(botao => {
     botao.addEventListener('click', async () => {
       const cartas = await api.abrirPacote(botao.dataset.abrir);
       const alvo = document.getElementById('revelacao');
+
+      // As tres camadas (giro/verso/frente) sao o que o CSS do flip espera:
+      // sem elas a carta aparece de uma vez, sem virar.
       alvo.innerHTML = `
         <section class="card" style="margin-bottom:24px">
           <div class="card-cabecalho"><h2>Seu pacote</h2></div>
-          <div class="revelacao">
-            ${cartas.map(f => `<div class="carta-flip">${carta(f, {
-                etiqueta: f.novaNoAlbum ? 'NOVA' : ''
-              })}</div>`).join('')}
+          <div class="revelacao" id="palco-revelacao">
+            ${cartas.map((f, i) => {
+              const lendaria = f.raridade.ordem === 4;
+              return `
+              <div class="carta-flip" data-ordem="${i}" data-lendaria="${lendaria}">
+                <div class="giro">
+                  <div class="verso"><span>?</span></div>
+                  <div class="frente">
+                    ${carta(f, {
+                      etiqueta: f.novaNoAlbum ? 'NOVA' : 'REPETIDA',
+                      classeExtra: lendaria ? 'brilho-lendaria' : ''
+                    })}
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
           </div>
         </section>`;
+
       alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Vira uma carta a cada 320ms, igual ao revelacao.js do backend.
-      alvo.querySelectorAll('.carta-flip').forEach((c, i) => {
-        setTimeout(() => c.classList.add('virada'), 320 * (i + 1));
-      });
+      // Mesma coreografia da tela JSP — stagger, suspense da lendaria e
+      // movimento reduzido vivem no revelacao.js, nao aqui.
+      window.TheChampions.revelar(document.getElementById('palco-revelacao'));
     });
   });
 }
@@ -247,26 +320,22 @@ async function telaTrocas() {
   const matches = await api.matches();
 
   const cards = matches.map((m, i) => `
-    <article class="match">
-      <div class="card-cabecalho">
+    <article class="match ${m.qualidade === 'perfeito' ? 'perfeito' : ''}">
+      <div class="cabecalho">
+        <span class="avatar">${iniciais(m.nome)}</span>
         <div>
           <b>${escapar(m.nome)}</b>
           <small class="secundario pequeno" style="display:block">
-            ${icone('ranking')} reputação ${m.reputacao.toFixed(1)}
+            reputação ${Number(m.reputacao).toFixed(1)}
           </small>
         </div>
-        <span class="tag ${m.qualidade === 'Troca justa' ? 'tag-sucesso' : 'tag-aviso'}">${escapar(m.qualidade)}</span>
-      </div>
-      <div class="troca-lados">
-        <div>
-          <small class="secundario">Você recebe</small>
-          <div class="grade-figurinhas">${m.recebo.map(f => carta(f)).join('')}</div>
-        </div>
-        <div>
-          <small class="secundario">Você envia</small>
-          <div class="grade-figurinhas">${m.envio.map(f => carta(f)).join('')}</div>
+        <span class="tag ${qualidadeTag(m.qualidade)}">${escapar(rotuloQualidade(m.qualidade))}</span>
+        <div class="ganho">
+          <b>${m.recebo.length}</b>
+          <small>faltantes resolvidas</small>
         </div>
       </div>
+      ${trocaLados(m)}
       <button class="btn btn-primario btn-bloco" data-propor="${i}">
         ${m.codigo ? 'Abrir negociação ' + escapar(m.codigo) : 'Propor troca'}
       </button>
@@ -302,8 +371,14 @@ async function telaNegociacao(codigo) {
   await moldura('trocas', `Negociação ${m.codigo}`, `
     <div id="aviso"></div>
     <div class="stepper">
-      ${etapas.map((e, i) => `<div class="etapa ${i === 0 ? 'feita' : ''}" data-etapa="${i}">
-          <span class="num">${i + 1}</span> ${e}</div>`).join('')}
+      ${etapas.map((e, i) => {
+        // Proposta e a confirmacao de quem propos ja estao feitas ao abrir a tela.
+        const feita = i === 0 || (i === 1 && m.euConfirmei !== false);
+        const atual = !feita && i === (m.euConfirmei === false ? 1 : 2);
+        return `<div class="etapa ${feita ? 'feita' : atual ? 'atual' : 'futura'}" data-etapa="${i}">
+                  <span class="marca-etapa">${feita ? '✓' : i + 1}</span> ${e}
+                </div>`;
+      }).join('')}
     </div>
     <div class="negociacao" style="margin-top:24px">
       <section class="card">
@@ -341,7 +416,10 @@ async function telaNegociacao(codigo) {
     const executou = r.ok !== false && r.resultado !== 'AGUARDANDO_OUTRO';
 
     document.querySelectorAll('.etapa').forEach((el, i) => {
-      if (executou || i < 2) el.classList.add('feita');
+      if (!executou && i >= 2) return;
+      el.classList.remove('atual', 'futura');
+      el.classList.add('feita');
+      el.querySelector('.marca-etapa').textContent = '✓';
     });
     document.getElementById('aviso').innerHTML = executou
       ? `<div class="alerta alerta-sucesso">Troca ${escapar(m.codigo)} concluída com sucesso.</div>`
@@ -439,24 +517,35 @@ async function telaLogin(erroAnterior) {
   raiz.innerHTML = `
     <main class="conteudo" style="grid-column:1/-1">
       <div class="tela-acesso">
-        <div class="caixa-acesso">
-          <span class="escudo"><svg class="icone" viewBox="0 0 24 24">
-            <path d="M12 4l4 4h-8zM12 20l-4-4h8z" fill="currentColor" stroke="none"/></svg></span>
-          <h1>The Champions</h1>
-          <p class="secundario pequeno">Entre para ver o seu álbum.</p>
-          ${erroAnterior ? `<div class="alerta alerta-erro">${escapar(erroAnterior)}</div>` : ''}
-          <form id="formLogin">
+        <div class="caixa-acesso surge">
+          <span class="marca">
+            <span class="escudo"><svg class="icone" viewBox="0 0 24 24">
+              <path d="M12 4l4 4h-8zM12 20l-4-4h8z" fill="currentColor" stroke="none"/></svg></span>
+            <span class="marca-nome">The Champ<span>ions</span></span>
+          </span>
+
+          <h2 style="text-align:center;margin-bottom:4px">Entrar na sua conta</h2>
+          <p class="secundario pequeno" style="text-align:center;margin-bottom:24px">
+            Continue montando seu álbum da Copa 2026.
+          </p>
+
+          ${erroAnterior ? `<div class="alerta alerta-erro" role="alert">
+              ${icone('alerta')}<span>${escapar(erroAnterior)}</span></div>` : ''}
+
+          <form id="formLogin" novalidate>
             <div class="campo">
               <label for="email">E-mail</label>
               <input type="email" id="email" required autocomplete="email" value="vinicius.k@email.com">
             </div>
             <div class="campo">
               <label for="senha">Senha</label>
-              <input type="password" id="senha" required autocomplete="current-password" value="123456">
+              <input type="password" id="senha" required autocomplete="current-password">
             </div>
             <button type="submit" class="btn btn-primario btn-bloco">Entrar</button>
           </form>
-          <p class="secundario pequeno" style="margin-top:16px">
+
+          <p class="secundario pequeno" style="margin-top:20px;text-align:center">
+            Usuário de teste: senha <code>123456</code>.<br>
             Conectado a <code>${escapar(api.baseURL)}</code>
           </p>
         </div>

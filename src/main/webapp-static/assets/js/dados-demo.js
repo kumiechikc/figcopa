@@ -134,9 +134,9 @@ export const HISTORICO = [
 ];
 
 export const PACOTES = [
-  { id: 1, nome: 'Pacote Inicial',  descricao: '7 figurinhas · chance padrão',            cartas: 7, disponivel: true },
-  { id: 2, nome: 'Pacote Diário',   descricao: '7 figurinhas · liberado a cada 24h',      cartas: 7, disponivel: true },
-  { id: 3, nome: 'Pacote Especial', descricao: '7 figurinhas · +2% chance de lendária',   cartas: 7, disponivel: false }
+  { id: 1, tipo: 'INICIAL',  nome: 'Pacote Inicial',  descricao: '7 figurinhas · chance padrão',          cartas: 7, disponivel: true },
+  { id: 2, tipo: 'DIARIO',   nome: 'Pacote Diário',   descricao: '7 figurinhas · liberado a cada 24h',    cartas: 7, disponivel: true },
+  { id: 3, tipo: 'ESPECIAL', nome: 'Pacote Especial', descricao: '7 figurinhas · +2% chance de lendária', cartas: 7, disponivel: false }
 ];
 
 export const NOTIFICACOES = [
@@ -150,11 +150,12 @@ export function matchesDemo() {
   const faltantes = CATALOGO.filter(f => f.quantidade === 0);
   const repetidas = CATALOGO.filter(f => f.quantidade > 1);
 
+  // Os mesmos tres valores que Match.getQualidade() devolve no backend.
   const parceiros = [
-    { nome: 'Pedro Marques',   reputacao: 4.8, qualidade: 'Troca justa' },
-    { nome: 'Arthur Tarrago',  reputacao: 4.6, qualidade: 'Troca justa' },
-    { nome: 'Marcos Vinicius', reputacao: 4.7, qualidade: 'Levemente desigual' },
-    { nome: 'Luana Figus',     reputacao: 4.3, qualidade: 'Troca justa' }
+    { nome: 'Pedro Marques',   reputacao: 4.8, qualidade: 'perfeito' },
+    { nome: 'Arthur Tarrago',  reputacao: 4.6, qualidade: 'perfeito' },
+    { nome: 'Marcos Vinicius', reputacao: 4.7, qualidade: 'desigual' },
+    { nome: 'Luana Figus',     reputacao: 4.3, qualidade: 'parcial'  }
   ];
 
   return parceiros.map((p, i) => ({

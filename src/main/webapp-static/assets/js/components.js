@@ -78,6 +78,22 @@ function busto(fig) {
     </svg>`;
 }
 
+/**
+ * Linha compacta de figurinha, usada onde a carta inteira ocuparia espaco demais
+ * — os dois lados de uma troca, por exemplo, que precisam ser comparados de
+ * relance. A borda esquerda carrega a raridade.
+ */
+export function figLinha(fig) {
+  return `
+    <div class="fig-linha r${fig.raridade.ordem}">
+      <span class="mini"></span>
+      <span class="info">
+        <b>${escapar(fig.nomeJogador)}</b>
+        <small>${escapar(fig.siglaSelecao)} · ${escapar(fig.raridade.nomeExibicao)}</small>
+      </span>
+    </div>`;
+}
+
 export function moeda(valor) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }

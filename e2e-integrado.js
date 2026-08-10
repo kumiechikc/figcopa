@@ -124,9 +124,10 @@ function checar(nome, cond, detalhe) {
   await limpa.fill('#senha', 'errada');
   await limpa.click('#formLogin button');
   await limpa.waitForTimeout(1200);
-  checar('senha errada volta ao login com aviso',
-         (await limpa.locator('.alerta-erro').count()) === 1,
-         (await limpa.locator('.alerta-erro').innerText().catch(() => '—')).slice(0, 40));
+  const msgSenha = await limpa.locator('.alerta-erro').innerText().catch(() => '—');
+  checar('senha errada diz que a credencial e invalida (nao "sessao expirada")',
+         /inv[aá]lid/i.test(msgSenha) && !/expirada/i.test(msgSenha),
+         msgSenha.trim().slice(0, 45));
 
   await limpa.fill('#senha', '123456');
   await limpa.click('#formLogin button');
