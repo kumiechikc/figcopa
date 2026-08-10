@@ -47,9 +47,6 @@
 
   <div style="margin-top:auto"></div>
   <nav>
-    <a href="${ctx}/diagnostico" class="nav-item">
-      <svg class="icone"><use href="#i-banco"/></svg> Diagnóstico
-    </a>
     <a href="${ctx}/logout" class="nav-item">
       <svg class="icone"><use href="#i-sair"/></svg> Sair
     </a>

@@ -14,7 +14,6 @@
   <nav>
     <a href="#como-funciona">Como funciona</a>
     <a href="#raridades">Raridades</a>
-    <a href="${ctx}/diagnostico">Status do sistema</a>
   </nav>
   <div class="acoes">
     <a href="${ctx}/login" class="btn btn-fantasma">Entrar</a>
