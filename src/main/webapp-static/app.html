@@ -626,8 +626,15 @@ async function rotear() {
 // ---------------------------------------------------------------------- boot
 
 (async () => {
-  document.getElementById('sprite').innerHTML =
-    await fetch('./assets/icones.svg').then(r => r.text());
+ try {
+  // Os icones sao decorativos: um sprite que nao carrega nao pode impedir a
+  // aplicacao de aparecer. Sem este try, a tela inteira ficava em branco.
+  try {
+    document.getElementById('sprite').innerHTML =
+      await fetch('./assets/icones.svg').then(r => r.text());
+  } catch (e) {
+    console.warn('sprite de icones nao carregou:', e);
+  }
 
   await api.sondar();
 
@@ -640,7 +647,32 @@ async function rotear() {
 
   window.addEventListener('hashchange', rotear);
   await rotear();
+
+ } catch (erro) {
+  // Uma tela em branco nao diz nada a quem abriu. Se o boot falhar — modulo que
+  // o navegador nao entende, arquivo que faltou — pelo menos explica o que houve.
+  console.error('falha ao iniciar a vitrine:', erro);
+  document.getElementById('app').innerHTML = `
+    <main class="conteudo" style="grid-column:1/-1"><div class="pagina">
+      <div class="alerta alerta-erro" role="alert">
+        <b>A vitrine não conseguiu iniciar.</b><br>
+        ${String(erro && erro.message || erro)}
+      </div>
+      <p class="secundario pequeno">
+        Se o seu navegador for antigo, tente um mais recente.
+        <a href="./index.html">Voltar à página inicial</a>.
+      </p>
+    </div></main>`;
+ }
 })();
 </script>
+
+<noscript>
+  <div style="padding:32px;font-family:system-ui,sans-serif;color:#E6E9F2;background:#0B1020">
+    <h1>The Champions</h1>
+    <p>Esta vitrine é montada com JavaScript. Ligue o JavaScript para navegar pelas telas,
+       ou veja o código em <a href="https://github.com/kumiechikc/figcopa">github.com/kumiechikc/figcopa</a>.</p>
+  </div>
+</noscript>
 </body>
 </html>
