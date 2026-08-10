@@ -156,10 +156,22 @@ class Api {
     return this.pedir('/api/trocas');
   }
 
-  /** Uma troca ja gravada. No demo nao ha o que buscar: o match e a troca. */
+  /**
+   * Uma troca ja gravada. No demo nao ha o que buscar — o match faz as vezes da
+   * troca — mas o formato precisa ser o mesmo que a API devolve, senao a tela de
+   * negociacao le campos que so existem de um dos lados.
+   */
   async troca(codigo) {
     if (this.modoDemo) {
-      return demo.matchesDemo().find(m => m.codigo === codigo) || null;
+      const m = demo.matchesDemo().find(x => x.codigo === codigo);
+      if (!m) return null;
+      return {
+        ...m,
+        status: 'PENDENTE',
+        statusExibicao: 'aguardando você',
+        euConfirmei: false,
+        parceiroConfirmou: true
+      };
     }
     return this.pedir(`/api/troca/${encodeURIComponent(codigo)}`);
   }

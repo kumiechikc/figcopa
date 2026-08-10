@@ -124,8 +124,15 @@ function topbar(titulo) {
   </div>`;
 }
 
-/** Monta a moldura (sidebar + topbar) em volta do conteudo da tela. */
+/**
+ * Monta a moldura (sidebar + topbar) em volta do conteudo da tela.
+ *
+ * Tambem acerta o <title>: sem isso toda entrada do historico do navegador fica
+ * com o mesmo rotulo e voltar vira adivinhacao.
+ */
 async function moldura(rotaAtiva, titulo, corpoHtml) {
+  document.title = `${titulo} — The Champions`;
+
   const [usuario, pacotes, matches] = await Promise.all([
     api.usuario(), api.pacotes(), api.matches()
   ]);
@@ -389,8 +396,11 @@ async function telaNegociacao(codigo) {
         <div class="card-cabecalho"><h2>Resumo</h2></div>
         <p class="secundario pequeno">Parceiro</p>
         <b>${escapar(m.nome)}</b>
-        <p class="secundario pequeno" style="margin-top:12px">Avaliação da troca</p>
-        <span class="tag ${m.qualidade === 'Troca justa' ? 'tag-sucesso' : 'tag-aviso'}">${escapar(m.qualidade)}</span>
+        <p class="secundario pequeno" style="margin-top:12px">Situação</p>
+        <span class="tag ${m.status === 'CONCLUIDA' ? 'tag-sucesso'
+                         : m.status === 'RECUSADA' ? 'tag-erro' : 'tag-aviso'}">
+          ${escapar(m.statusExibicao || 'aguardando')}
+        </span>
         <p class="secundario pequeno" style="margin-top:16px">
           ${m.parceiroConfirmou === false
               ? 'Aguardando a confirmação do parceiro.'
@@ -438,7 +448,7 @@ async function telaPerfil() {
   await moldura('perfil', 'Perfil e Reputação', `
     <div class="grade-perfil">
       <section class="card" style="text-align:center">
-        <span class="avatar-g">${iniciais(usuario.nome)}</span>
+        <span class="avatar avatar-g">${iniciais(usuario.nome)}</span>
         <h2 style="margin-top:12px">${escapar(usuario.nome)}</h2>
         <p class="secundario pequeno">${escapar(usuario.email)}</p>
         <p style="margin-top:12px"><span class="tag tag-sucesso">Reputação ${usuario.reputacao.toFixed(1)}</span></p>
@@ -514,6 +524,7 @@ async function telaHistorico() {
  * dava uma sequência de 401 e nenhuma forma de entrar.
  */
 async function telaLogin(erroAnterior) {
+  document.title = 'Entrar — The Champions';
   raiz.innerHTML = `
     <main class="conteudo" style="grid-column:1/-1">
       <div class="tela-acesso">

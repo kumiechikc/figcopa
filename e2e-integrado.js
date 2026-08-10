@@ -48,8 +48,15 @@ function checar(nome, cond, detalhe) {
 
   checar('saiu do modo demonstracao', (await page.locator('.faixa-demo').count()) === 0);
 
+  // Compara com o que a propria API responde, em vez de fixar um numero: as
+  // suites rodam em serie sobre o mesmo banco e abrir um pacote muda o total.
   const pct = await page.locator('.percentual').innerText();
-  checar('progresso veio do banco', pct === '43%', pct + ' (banco: 43%)');
+  const pctApi = await page.evaluate(async ([b, t]) => {
+    const r = await fetch(`${b}/api/album/resumo`, { headers: { Authorization: 'Bearer ' + t } });
+    return (await r.json()).percentual;
+  }, [BACKEND, token]);
+  checar('progresso veio do banco, nao dos dados de exemplo',
+         pct === pctApi + '%', `tela ${pct} / API ${pctApi}%`);
 
   await page.goto(VITRINE + '/app.html#/album', { waitUntil: 'networkidle' });
   await page.waitForSelector('.figurinha', { timeout: 8000 });

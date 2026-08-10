@@ -102,6 +102,18 @@ esperava um `.giro` que nunca existiu.
 produza — um componente novo entra na checagem sozinho. Ele também mede a animação de fato
 (o `transform` computado antes e depois do giro), em vez de confiar na classe.
 
+E confere **estilo computado**, não só presença de classe. Alguns nomes do CSS são
+modificadores, não classes autônomas: `.avatar-g` só define tamanho — o círculo e o
+gradiente vêm de `.avatar` —, então usar o modificador sozinho rende um texto solto, com a
+classe certa e nenhuma aparência. O teste cobra `border-radius: 50%` e o gradiente, a moldura
+da `.arte` e a faixa de raridade da `.fig-linha`.
+
+> **A barra de navegação inchava no celular.** `.app` tem `min-height: 100vh`, e num grid de
+> uma coluna o `align-content: stretch` padrão divide a sobra de altura entre as linhas: numa
+> página curta a barra chegava a 222px antes do conteúdo começar. `grid-template-rows: auto 1fr`
+> prende a barra ao próprio conteúdo. O defeito era do CSS compartilhado — a aplicação JSP só
+> não o exibia porque as telas dela são mais altas; ela também encolheu de 109px para 76px.
+
 ---
 
 ## Como rodar do zero
@@ -440,8 +452,13 @@ rota inválida caindo no dashboard e ausência de rolagem horizontal em 390px.
 ```bash
 cd src/main/webapp-static && python3 -m http.server 8123   # e, noutro terminal:
 node e2e-static.js       # vitrine sozinha, com os dados de exemplo
+node e2e-contrato.js     # contrato de markup e estilo com o app.css
 node e2e-integrado.js    # vitrine + Tomcat + MySQL
 ```
+
+Mais 23 asserções de contrato (`e2e-contrato.js`): a estrutura que o `app.css` exige, o
+estilo computado que prova que ele pegou, o giro medido pelo `transform` e o comportamento
+sob `prefers-reduced-motion`.
 
 E a integração entre as duas frentes, com mais 21 asserções (`e2e-integrado.js`): a vitrine
 servida em `:8123` consumindo o Tomcat em `:8080` — sai do modo demonstração, o progresso e
