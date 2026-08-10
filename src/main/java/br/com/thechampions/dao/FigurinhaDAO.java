@@ -19,7 +19,8 @@ public class FigurinhaDAO {
             SELECT f.id_figurinha, f.numero_album, f.nome_jogador, f.selecao,
                    f.sigla_selecao, f.posicao,
                    r.id_raridade, r.nome AS raridade_nome, r.cor_hex,
-                   r.valor_referencia, r.probabilidade, r.ordem
+                   r.valor_referencia, r.probabilidade, r.ordem,
+                   f.url_imagem_jogador, f.url_imagem_escudo
               FROM figurinha f
               JOIN raridade r ON r.id_raridade = f.id_raridade
             """;
@@ -69,6 +70,7 @@ public class FigurinhaDAO {
                        f.sigla_selecao, f.posicao,
                        r.id_raridade, r.nome AS raridade_nome, r.cor_hex,
                        r.valor_referencia, r.probabilidade, r.ordem,
+                       f.url_imagem_jogador, f.url_imagem_escudo,
                        COALESCE(c.quantidade, 0) AS quantidade
                   FROM figurinha f
                   JOIN raridade r ON r.id_raridade = f.id_raridade
@@ -113,6 +115,7 @@ public class FigurinhaDAO {
                        f.sigla_selecao, f.posicao,
                        r.id_raridade, r.nome AS raridade_nome, r.cor_hex,
                        r.valor_referencia, r.probabilidade, r.ordem,
+                       f.url_imagem_jogador, f.url_imagem_escudo,
                        COALESCE(c.quantidade, 0) AS quantidade
                   FROM figurinha f
                   JOIN raridade r ON r.id_raridade = f.id_raridade
@@ -162,6 +165,8 @@ public class FigurinhaDAO {
         f.setSiglaSelecao(rs.getString("sigla_selecao"));
         f.setPosicao(rs.getString("posicao"));
         f.setRaridade(mapearRaridade(rs));
+        f.setUrlImagemJogador(rs.getString("url_imagem_jogador"));
+        f.setUrlImagemEscudo(rs.getString("url_imagem_escudo"));
         return f;
     }
 

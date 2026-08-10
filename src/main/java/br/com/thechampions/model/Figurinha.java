@@ -23,6 +23,9 @@ public class Figurinha {
     /** Marcada quando a figurinha acabou de sair de um pacote. */
     private boolean novaNoAlbum;
 
+    private String urlImagemJogador;
+    private String urlImagemEscudo;
+
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -53,6 +56,12 @@ public class Figurinha {
     public boolean isObtida()  { return quantidade > 0; }
     public boolean isFaltante(){ return quantidade == 0; }
     public boolean isRepetida(){ return quantidade > 1; }
+
+    public String getUrlImagemJogador() { return urlImagemJogador; }
+    public void setUrlImagemJogador(String urlImagemJogador) { this.urlImagemJogador = urlImagemJogador; }
+
+    public String getUrlImagemEscudo() { return urlImagemEscudo; }
+    public void setUrlImagemEscudo(String urlImagemEscudo) { this.urlImagemEscudo = urlImagemEscudo; }
 
     /** Quantas copias sobrando existem para ofertar em troca. */
     public int getExcedente() { return Math.max(0, quantidade - 1); }
