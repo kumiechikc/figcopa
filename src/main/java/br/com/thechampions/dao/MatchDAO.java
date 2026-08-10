@@ -39,6 +39,7 @@ public class MatchDAO {
             SELECT u.id_usuario AS parceiro,
                    f.id_figurinha, f.numero_album, f.nome_jogador, f.selecao,
                    f.sigla_selecao, f.posicao,
+                   f.url_imagem_jogador, f.url_imagem_escudo,
                    r.id_raridade, r.nome AS raridade_nome, r.cor_hex,
                    r.valor_referencia, r.probabilidade, r.ordem
               FROM colecao minha
@@ -63,6 +64,7 @@ public class MatchDAO {
                    u.tipo_conta, u.reputacao_media, u.data_cadastro, u.ativo,
                    f.id_figurinha, f.numero_album, f.nome_jogador, f.selecao,
                    f.sigla_selecao, f.posicao,
+                   f.url_imagem_jogador, f.url_imagem_escudo,
                    r.id_raridade, r.nome AS raridade_nome, r.cor_hex,
                    r.valor_referencia, r.probabilidade, r.ordem
               FROM colecao dele

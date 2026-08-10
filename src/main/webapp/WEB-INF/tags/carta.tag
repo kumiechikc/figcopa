@@ -29,7 +29,15 @@
 
   <div class="busto">
     <c:choose>
-      <%-- Escudos de selecao nao tem jogador: desenham o brasao. --%>
+      <%-- Imagem real disponível para escudo --%>
+      <c:when test="${fig.escudo and not empty fig.urlImagemEscudo}">
+        <img src="${fig.urlImagemEscudo}" alt="${fig.nomeJogador}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>
+      </c:when>
+      <%-- Imagem real disponível para jogador --%>
+      <c:when test="${not fig.escudo and not empty fig.urlImagemJogador}">
+        <img src="${fig.urlImagemJogador}" alt="${fig.nomeJogador}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>
+      </c:when>
+      <%-- Escudos de selecao sem imagem: desenham o brasao em SVG. --%>
       <c:when test="${fig.escudo}">
         <svg viewBox="0 0 80 96" style="width:52%;margin-bottom:14px">
           <path d="M40 8 L70 20 V52 C70 70 56 82 40 88 C24 82 10 70 10 52 V20 Z"
@@ -38,6 +46,7 @@
                 fill="${fig.raridade.corHex}" opacity=".8"/>
         </svg>
       </c:when>
+      <%-- Jogadores sem imagem: desenham busto em SVG. --%>
       <c:otherwise>
         <svg viewBox="0 0 80 96" preserveAspectRatio="xMidYMax meet">
           <defs>

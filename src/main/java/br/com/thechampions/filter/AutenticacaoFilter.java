@@ -31,8 +31,13 @@ public class AutenticacaoFilter implements Filter {
             "/login", "/cadastro", "/logout",
             "/diagnostico");
 
+    /**
+     * "/api/" fica de fora porque quem cuida dela e o ApiFilter: ele valida o
+     * token e responde 401 em JSON. Se caisse aqui, uma chamada sem sessao
+     * receberia um redirect para o HTML do login em vez de um erro tratavel.
+     */
     private static final Set<String> PREFIXOS_PUBLICOS = Set.of(
-            "/assets/");
+            "/assets/", "/api/");
 
     @Override
     public void doFilter(ServletRequest requisicao, ServletResponse resposta, FilterChain corrente)

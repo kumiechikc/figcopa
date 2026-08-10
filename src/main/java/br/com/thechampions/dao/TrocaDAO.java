@@ -372,6 +372,7 @@ public class TrocaDAO {
         String consulta = """
                 SELECT f.id_figurinha, f.numero_album, f.nome_jogador, f.selecao,
                        f.sigla_selecao, f.posicao,
+                       f.url_imagem_jogador, f.url_imagem_escudo,
                        r.id_raridade, r.nome AS raridade_nome, r.cor_hex,
                        r.valor_referencia, r.probabilidade, r.ordem,
                        ti.id_usuario_remetente AS remetente, ti.quantidade AS qtd_item

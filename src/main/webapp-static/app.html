@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Champions</title>
+<meta name="description" content="Marketplace peer-to-peer de troca de figurinhas da Copa do Mundo 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@700;800;900&family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%237C3AE3'/><path d='M12 5l4 4h-8zM12 19l-4-4h8z' fill='white'/></svg>">
+<style>
+  /* Faixa que avisa que a vitrine roda sem backend. Sai sozinha quando a API responde. */
+  .faixa-demo{background:linear-gradient(90deg,#7C3AE3,#A855F7);color:#fff;padding:8px 16px;
+    font-size:13px;text-align:center;font-weight:600}
+  .faixa-demo a{color:#fff;text-decoration:underline}
+  .app.com-faixa{min-height:calc(100vh - 37px)}
+</style>
+</head>
+<body>
+
+<div id="sprite"></div>
+<div id="faixa"></div>
+<div class="app" id="app"></div>
+
+<script type="module">
+import { api } from './assets/js/api.js';
+import { carta, escapar, moeda } from './assets/js/components.js';
+
+const raiz = document.getElementById('app');
+
+// ---------------------------------------------------------------- utilidades
+
+const icone = n => `<svg class="icone"><use href="#i-${n}"/></svg>`;
+
+function iniciais(nome) {
+  return nome.split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+}
+
+const ROTAS = [
+  ['dashboard', 'Dashboard',            'dashboard', 'Principal'],
+  ['album',     'Meu Álbum',            'album',     'Principal'],
+  ['trocas',    'Buscar Trocas',        'troca',     'Principal'],
+  ['pacotes',   'Abrir Pacotes',        'pacote',    'Principal'],
+  ['perfil',    'Perfil e Reputação',   'usuario',   'Minha conta'],
+  ['ranking',   'Ranking',              'ranking',   'Minha conta'],
+  ['historico', 'Histórico de Trocas',  'historico', 'Minha conta']
+];
+
+function sidebar(ativa, usuario, contadores) {
+  const grupo = titulo => {
+    const itens = ROTAS.filter(r => r[3] === titulo).map(([id, rotulo, ic]) => {
+      const n = contadores[id];
+      return `<a href="#/${id}" class="nav-item ${ativa === id ? 'ativo' : ''}">
+                ${icone(ic)} ${rotulo}
+                ${n ? `<span class="nav-badge">${n}</span>` : ''}
+              </a>`;
+    }).join('');
+    return `<div class="nav-grupo">${titulo}</div><nav>${itens}</nav>`;
+  };
+
+  return `
+  <aside class="sidebar">
+    <a href="#/dashboard" class="marca" style="text-decoration:none;color:inherit">
+      <span class="escudo"><svg class="icone" viewBox="0 0 24 24">
+        <path d="M12 4l4 4h-8zM12 20l-4-4h8z" fill="currentColor" stroke="none"/></svg></span>
+      <span class="marca-nome">The<br>Champ<span>ions</span></span>
+    </a>
+    ${grupo('Principal')}
+    ${grupo('Minha conta')}
+    <div style="margin-top:auto"></div>
+    <nav><a href="#/sair" class="nav-item">${icone('sair')} Sair</a></nav>
+    <div class="sidebar-rodape">
+      <span class="avatar">${iniciais(usuario.nome)}</span>
+      <span style="min-width:0">
+        <b style="display:block;font-size:12px">${escapar(usuario.nome)}</b>
+        <small class="secundario pequeno" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapar(usuario.email)}</small>
+      </span>
+    </div>
+  </aside>`;
+}
+
+function topbar(titulo) {
+  return `<div class="topbar">
+    <div class="topbar-titulo"><h1>${escapar(titulo)}</h1></div>
+    <div class="topbar-dir"><span class="tag tag-roxo">Copa 2026</span></div>
+  </div>`;
+}
+
+/** Monta a moldura (sidebar + topbar) em volta do conteudo da tela. */
+async function moldura(rotaAtiva, titulo, corpoHtml) {
+  const [usuario, pacotes, matches] = await Promise.all([
+    api.usuario(), api.pacotes(), api.matches()
+  ]);
+  const contadores = {
+    pacotes: pacotes.filter(p => p.disponivel).length,
+    trocas: matches.length
+  };
+  raiz.innerHTML = sidebar(rotaAtiva, usuario, contadores)
+    + `<main class="conteudo">${topbar(titulo)}<div class="pagina">${corpoHtml}</div></main>`;
+}
+
+// -------------------------------------------------------------------- telas
+
+async function telaDashboard() {
+  const [resumo, notificacoes, historico] = await Promise.all([
+    api.resumo(), api.notificacoes(), api.historico()
+  ]);
+
+  const barras = resumo.porRaridade.map(r => `
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span>${r.raridade.nomeExibicao}</span>
+        <span class="mono-min">${r.obtidas}/${r.total}</span>
+      </div>
+      <div class="barra"><i style="width:0;background:${r.raridade.corHex}"
+           data-alvo="${Math.round(r.obtidas / r.total * 100)}%"></i></div>
+    </div>`).join('');
+
+  const avisos = notificacoes.map(n => `
+    <div class="notificacao">
+      <span>${escapar(n.texto)}</span>
+      <small class="secundario pequeno">${escapar(n.quando)}</small>
+    </div>`).join('');
+
+  const linhas = historico.slice(0, 4).map(t => `
+    <tr>
+      <td class="mono-min">${escapar(t.codigo)}</td>
+      <td>${escapar(t.parceiro)}</td>
+      <td><span class="tag ${t.status === 'CONCLUIDA' ? 'tag-sucesso' : 'tag-erro'}">${escapar(t.status)}</span></td>
+      <td class="secundario">${escapar(t.quando)}</td>
+    </tr>`).join('');
+
+  await moldura('dashboard', 'Dashboard', `
+    <div class="grade grade-4">
+      <div class="card"><small class="secundario">Progresso</small>
+        <div class="num percentual">${resumo.percentual}%</div></div>
+      <div class="card"><small class="secundario">Obtidas</small>
+        <div class="num">${resumo.obtidas}<small class="secundario">/${resumo.total}</small></div></div>
+      <div class="card"><small class="secundario">Repetidas</small>
+        <div class="num">${resumo.repetidas}</div></div>
+      <div class="card"><small class="secundario">Valor estimado</small>
+        <div class="num">${moeda(resumo.valorEstimado)}</div></div>
+    </div>
+
+    <div class="grade grade-2" style="margin-top:24px">
+      <section class="card">
+        <div class="card-cabecalho"><h2>Coleção por raridade</h2></div>
+        <div class="quebra-raridade" style="display:grid;gap:14px">${barras}</div>
+      </section>
+      <section class="card">
+        <div class="card-cabecalho"><h2>Notificações</h2></div>
+        ${avisos}
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:24px">
+      <div class="card-cabecalho"><h2>Trocas recentes</h2>
+        <a href="#/historico" class="btn btn-fantasma">Ver tudo</a></div>
+      <div class="rolagem-x">
+        <table class="tabela">
+          <thead><tr><th>Código</th><th>Parceiro</th><th>Status</th><th>Quando</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+    </section>`);
+
+  // Anima as barras depois da pintura, senao a transicao nao dispara.
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.barra > i').forEach(b => b.style.width = b.dataset.alvo);
+  });
+}
+
+async function telaAlbum(filtros) {
+  const lista = await api.album(filtros);
+  const todas = await api.album({});
+
+  const selecoes = [...new Set(todas.map(f => f.siglaSelecao))];
+  const filtroLink = (chave, valor, rotulo) => {
+    const f = { ...filtros };
+    if (valor === null) delete f[chave]; else f[chave] = valor;
+    const ativo = (filtros[chave] || null) === valor;
+    const qs = new URLSearchParams(f).toString();
+    return `<a href="#/album${qs ? '?' + qs : ''}" class="filtro ${ativo ? 'ativo' : ''}">${rotulo}</a>`;
+  };
+
+  const cartas = lista.length
+    ? lista.map(f => carta(f, { mostrarStatus: true })).join('')
+    : `<p class="vazio">Nenhuma figurinha com esse filtro.</p>`;
+
+  await moldura('album', 'Meu Álbum', `
+    <div class="filtros">
+      ${filtroLink('status', null, 'Todas')}
+      ${filtroLink('status', 'obtidas', 'Obtidas')}
+      ${filtroLink('status', 'faltantes', 'Faltantes')}
+      ${filtroLink('status', 'repetidas', 'Repetidas')}
+    </div>
+    <div class="filtros" style="margin-top:8px">
+      ${filtroLink('selecao', null, 'Todas as seleções')}
+      ${selecoes.map(s => filtroLink('selecao', s, s)).join('')}
+    </div>
+    <p class="secundario pequeno" style="margin:16px 0">${lista.length} figurinha(s)</p>
+    <div class="grade-figurinhas">${cartas}</div>`);
+}
+
+async function telaPacotes() {
+  const pacotes = await api.pacotes();
+
+  const cards = pacotes.map(p => `
+    <div class="pacote-card ${p.disponivel ? '' : 'apenas-leitor'}">
+      <div class="deck">${icone('pacote')}</div>
+      <h3>${escapar(p.nome)}</h3>
+      <p class="secundario pequeno">${escapar(p.descricao)}</p>
+      ${p.disponivel
+        ? `<button class="btn btn-primario btn-bloco" data-abrir="${p.id}">Abrir pacote</button>`
+        : `<button class="btn btn-secundario btn-bloco" disabled>Indisponível</button>`}
+    </div>`).join('');
+
+  await moldura('pacotes', 'Abrir Pacotes', `
+    <div id="revelacao"></div>
+    <div class="grade grade-3">${cards}</div>`);
+
+  raiz.querySelectorAll('[data-abrir]').forEach(botao => {
+    botao.addEventListener('click', async () => {
+      const cartas = await api.abrirPacote(botao.dataset.abrir);
+      const alvo = document.getElementById('revelacao');
+      alvo.innerHTML = `
+        <section class="card" style="margin-bottom:24px">
+          <div class="card-cabecalho"><h2>Seu pacote</h2></div>
+          <div class="revelacao">
+            ${cartas.map(f => `<div class="carta-flip">${carta(f, {
+                etiqueta: f.novaNoAlbum ? 'NOVA' : ''
+              })}</div>`).join('')}
+          </div>
+        </section>`;
+      alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Vira uma carta a cada 320ms, igual ao revelacao.js do backend.
+      alvo.querySelectorAll('.carta-flip').forEach((c, i) => {
+        setTimeout(() => c.classList.add('virada'), 320 * (i + 1));
+      });
+    });
+  });
+}
+
+async function telaTrocas() {
+  const matches = await api.matches();
+
+  const cards = matches.map((m, i) => `
+    <article class="match">
+      <div class="card-cabecalho">
+        <div>
+          <b>${escapar(m.nome)}</b>
+          <small class="secundario pequeno" style="display:block">
+            ${icone('ranking')} reputação ${m.reputacao.toFixed(1)}
+          </small>
+        </div>
+        <span class="tag ${m.qualidade === 'Troca justa' ? 'tag-sucesso' : 'tag-aviso'}">${escapar(m.qualidade)}</span>
+      </div>
+      <div class="troca-lados">
+        <div>
+          <small class="secundario">Você recebe</small>
+          <div class="grade-figurinhas">${m.recebo.map(f => carta(f)).join('')}</div>
+        </div>
+        <div>
+          <small class="secundario">Você envia</small>
+          <div class="grade-figurinhas">${m.envio.map(f => carta(f)).join('')}</div>
+        </div>
+      </div>
+      <button class="btn btn-primario btn-bloco" data-propor="${i}">
+        ${m.codigo ? 'Abrir negociação ' + escapar(m.codigo) : 'Propor troca'}
+      </button>
+    </article>`).join('');
+
+  await moldura('trocas', 'Buscar Trocas', matches.length
+    ? `<p class="secundario pequeno" style="margin-bottom:16px">${matches.length} parceiro(s) compatível(is)</p>
+       <div class="grade-lista">${cards}</div>`
+    : `<p class="vazio">Nenhum parceiro compatível no momento.</p>`);
+
+  // A troca so passa a existir quando o usuario propoe: e a proposta que gera o
+  // codigo com que a tela de negociacao trabalha.
+  raiz.querySelectorAll('[data-propor]').forEach(botao => {
+    botao.addEventListener('click', async () => {
+      botao.disabled = true;
+      try {
+        const { codigo } = await api.proporTroca(matches[botao.dataset.propor]);
+        location.hash = `#/troca?codigo=${codigo}`;
+      } catch (erro) {
+        botao.disabled = false;
+        botao.textContent = 'Falhou: ' + erro.message;
+      }
+    });
+  });
+}
+
+async function telaNegociacao(codigo) {
+  const m = await api.troca(codigo);
+  if (!m) { location.hash = '#/trocas'; return; }
+
+  const etapas = ['Proposta', 'Você confirma', 'Parceiro confirma', 'Concluída'];
+
+  await moldura('trocas', `Negociação ${m.codigo}`, `
+    <div id="aviso"></div>
+    <div class="stepper">
+      ${etapas.map((e, i) => `<div class="etapa ${i === 0 ? 'feita' : ''}" data-etapa="${i}">
+          <span class="num">${i + 1}</span> ${e}</div>`).join('')}
+    </div>
+    <div class="negociacao" style="margin-top:24px">
+      <section class="card">
+        <div class="card-cabecalho"><h2>Você recebe</h2></div>
+        <div class="grade-figurinhas">${m.recebo.map(f => carta(f)).join('')}</div>
+      </section>
+      <section class="card" style="text-align:center">
+        <div class="card-cabecalho"><h2>Resumo</h2></div>
+        <p class="secundario pequeno">Parceiro</p>
+        <b>${escapar(m.nome)}</b>
+        <p class="secundario pequeno" style="margin-top:12px">Avaliação da troca</p>
+        <span class="tag ${m.qualidade === 'Troca justa' ? 'tag-sucesso' : 'tag-aviso'}">${escapar(m.qualidade)}</span>
+        <p class="secundario pequeno" style="margin-top:16px">
+          ${m.parceiroConfirmou === false
+              ? 'Aguardando a confirmação do parceiro.'
+              : 'O parceiro já confirmou.'}
+        </p>
+        <button class="btn btn-sucesso btn-bloco" id="confirmar" style="margin-top:8px"
+                ${m.euConfirmei ? 'disabled' : ''}>
+          ${m.euConfirmei ? 'Você já confirmou' : 'Confirmar troca'}
+        </button>
+      </section>
+      <section class="card">
+        <div class="card-cabecalho"><h2>Você envia</h2></div>
+        <div class="grade-figurinhas">${m.envio.map(f => carta(f)).join('')}</div>
+      </section>
+    </div>`);
+
+  document.getElementById('confirmar').addEventListener('click', async e => {
+    e.target.disabled = true;
+    const r = await api.confirmarTroca(m.codigo);
+
+    // AGUARDANDO_OUTRO: minha confirmacao entrou, mas a troca so executa quando
+    // o outro lado confirmar tambem. Dizer "concluida" aqui seria mentira.
+    const executou = r.ok !== false && r.resultado !== 'AGUARDANDO_OUTRO';
+
+    document.querySelectorAll('.etapa').forEach((el, i) => {
+      if (executou || i < 2) el.classList.add('feita');
+    });
+    document.getElementById('aviso').innerHTML = executou
+      ? `<div class="alerta alerta-sucesso">Troca ${escapar(m.codigo)} concluída com sucesso.</div>`
+      : `<div class="alerta alerta-info">Sua confirmação foi registrada. A troca executa quando ${escapar(m.nome)} confirmar.</div>`;
+    e.target.textContent = executou ? 'Troca concluída' : 'Aguardando o parceiro';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+async function telaPerfil() {
+  const [usuario, resumo] = await Promise.all([api.usuario(), api.resumo()]);
+  const raras = (await api.album({}))
+    .filter(f => f.quantidade > 0 && f.raridade.ordem >= 3)
+    .slice(0, 6);
+
+  await moldura('perfil', 'Perfil e Reputação', `
+    <div class="grade-perfil">
+      <section class="card" style="text-align:center">
+        <span class="avatar-g">${iniciais(usuario.nome)}</span>
+        <h2 style="margin-top:12px">${escapar(usuario.nome)}</h2>
+        <p class="secundario pequeno">${escapar(usuario.email)}</p>
+        <p style="margin-top:12px"><span class="tag tag-sucesso">Reputação ${usuario.reputacao.toFixed(1)}</span></p>
+      </section>
+      <section class="card">
+        <div class="card-cabecalho"><h2>Resumo da coleção</h2></div>
+        <div class="grade grade-2">
+          <div><small class="secundario">Progresso</small><div class="num">${resumo.percentual}%</div></div>
+          <div><small class="secundario">Obtidas</small><div class="num">${resumo.obtidas}</div></div>
+          <div><small class="secundario">Faltantes</small><div class="num">${resumo.faltantes}</div></div>
+          <div><small class="secundario">Repetidas</small><div class="num">${resumo.repetidas}</div></div>
+        </div>
+      </section>
+    </div>
+    <section class="card" style="margin-top:24px">
+      <div class="card-cabecalho"><h2>Suas figurinhas mais raras</h2></div>
+      ${raras.length
+        ? `<div class="grade-figurinhas">${raras.map(f => carta(f, { mostrarStatus: true })).join('')}</div>`
+        : `<p class="vazio">Você ainda não tem figurinhas raras.</p>`}
+    </section>`);
+}
+
+async function telaRanking() {
+  const ranking = await api.ranking();
+  const linhas = ranking.map(r => `
+    <tr>
+      <td class="mono-min">${r.posicao}º</td>
+      <td>${escapar(r.nome)}</td>
+      <td>${r.figurinhas}</td>
+      <td>${r.trocas}</td>
+      <td><span class="tag tag-sucesso">${r.reputacao.toFixed(1)}</span></td>
+    </tr>`).join('');
+
+  await moldura('ranking', 'Ranking', `
+    <section class="card">
+      <div class="card-cabecalho"><h2>Melhores colecionadores</h2></div>
+      <div class="rolagem-x">
+        <table class="tabela">
+          <thead><tr><th>#</th><th>Colecionador</th><th>Figurinhas</th><th>Trocas</th><th>Reputação</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+    </section>`);
+}
+
+async function telaHistorico() {
+  const historico = await api.historico();
+  const linhas = historico.map(t => `
+    <tr>
+      <td class="mono-min">${escapar(t.codigo)}</td>
+      <td>${escapar(t.parceiro)}</td>
+      <td><span class="tag ${t.status === 'CONCLUIDA' ? 'tag-sucesso' : 'tag-erro'}">${escapar(t.status)}</span></td>
+      <td>${t.recebidas}</td>
+      <td>${t.enviadas}</td>
+      <td class="secundario">${escapar(t.quando)}</td>
+    </tr>`).join('');
+
+  await moldura('historico', 'Histórico de Trocas', `
+    <section class="card">
+      <div class="card-cabecalho"><h2>Todas as negociações</h2></div>
+      <div class="rolagem-x">
+        <table class="tabela">
+          <thead><tr><th>Código</th><th>Parceiro</th><th>Status</th><th>Recebidas</th><th>Enviadas</th><th>Quando</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+    </section>`);
+}
+
+/**
+ * Só aparece quando há backend de verdade: no modo demonstração não existe o
+ * que autenticar. Sem esta tela, abrir a vitrine com o Tomcat no ar e sem token
+ * dava uma sequência de 401 e nenhuma forma de entrar.
+ */
+async function telaLogin(erroAnterior) {
+  raiz.innerHTML = `
+    <main class="conteudo" style="grid-column:1/-1">
+      <div class="tela-acesso">
+        <div class="caixa-acesso">
+          <span class="escudo"><svg class="icone" viewBox="0 0 24 24">
+            <path d="M12 4l4 4h-8zM12 20l-4-4h8z" fill="currentColor" stroke="none"/></svg></span>
+          <h1>The Champions</h1>
+          <p class="secundario pequeno">Entre para ver o seu álbum.</p>
+          ${erroAnterior ? `<div class="alerta alerta-erro">${escapar(erroAnterior)}</div>` : ''}
+          <form id="formLogin">
+            <div class="campo">
+              <label for="email">E-mail</label>
+              <input type="email" id="email" required autocomplete="email" value="vinicius.k@email.com">
+            </div>
+            <div class="campo">
+              <label for="senha">Senha</label>
+              <input type="password" id="senha" required autocomplete="current-password" value="123456">
+            </div>
+            <button type="submit" class="btn btn-primario btn-bloco">Entrar</button>
+          </form>
+          <p class="secundario pequeno" style="margin-top:16px">
+            Conectado a <code>${escapar(api.baseURL)}</code>
+          </p>
+        </div>
+      </div>
+    </main>`;
+
+  document.getElementById('formLogin').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const botao = ev.target.querySelector('button');
+    botao.disabled = true;
+    try {
+      await api.entrar(document.getElementById('email').value,
+                       document.getElementById('senha').value);
+      location.hash = '#/dashboard';
+      await rotear();
+    } catch (erro) {
+      await telaLogin(erro.message);
+    }
+  });
+}
+
+// ------------------------------------------------------------------ roteador
+
+const TELAS = {
+  dashboard: telaDashboard,
+  album:     telaAlbum,
+  pacotes:   telaPacotes,
+  trocas:    telaTrocas,
+  troca:     telaNegociacao,
+  perfil:    telaPerfil,
+  ranking:   telaRanking,
+  historico: telaHistorico
+};
+
+async function rotear() {
+  const bruto = (location.hash || '#/dashboard').slice(2);
+  const [nome, query] = bruto.split('?');
+  const params = Object.fromEntries(new URLSearchParams(query || ''));
+
+  if (nome === 'sair') {
+    api.sair();
+    if (api.modoDemo) { location.href = './index.html'; return; }
+    await telaLogin();
+    return;
+  }
+
+  // Com backend vivo e sem token, qualquer tela daria 401: pede o login antes.
+  if (!api.modoDemo && !api.token) { await telaLogin(); return; }
+
+  const tela = TELAS[nome] || telaDashboard;
+  try {
+    if (nome === 'album')      await tela(params);
+    else if (nome === 'troca') await tela(params.codigo);
+    else                       await tela();
+    window.scrollTo(0, 0);
+  } catch (erro) {
+    // O 401 ja limpou o token no api.js; aqui a sessao vencida vira login.
+    if (!api.modoDemo && !api.token) { await telaLogin(erro.message); return; }
+
+    raiz.innerHTML = `<main class="conteudo"><div class="pagina">
+      <div class="alerta alerta-erro">Falha ao carregar: ${escapar(erro.message)}</div>
+      <a href="#/dashboard" class="btn btn-primario">Voltar ao dashboard</a>
+    </div></main>`;
+  }
+}
+
+// ---------------------------------------------------------------------- boot
+
+(async () => {
+  document.getElementById('sprite').innerHTML =
+    await fetch('./assets/icones.svg').then(r => r.text());
+
+  await api.sondar();
+
+  if (api.modoDemo) {
+    document.getElementById('faixa').innerHTML =
+      `<div class="faixa-demo">Vitrine em modo demonstração — dados de exemplo,
+       sem servidor. <a href="./index.html">O que é isso?</a></div>`;
+    document.getElementById('app').classList.add('com-faixa');
+  }
+
+  window.addEventListener('hashchange', rotear);
+  await rotear();
+})();
+</script>
+</body>
+</html>

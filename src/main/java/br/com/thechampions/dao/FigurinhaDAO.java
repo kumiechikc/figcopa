@@ -19,7 +19,8 @@ public class FigurinhaDAO {
             SELECT f.id_figurinha, f.numero_album, f.nome_jogador, f.selecao,
                    f.sigla_selecao, f.posicao,
                    r.id_raridade, r.nome AS raridade_nome, r.cor_hex,
-                   r.valor_referencia, r.probabilidade, r.ordem
+                   r.valor_referencia, r.probabilidade, r.ordem,
+                   f.url_imagem_jogador, f.url_imagem_escudo
               FROM figurinha f
               JOIN raridade r ON r.id_raridade = f.id_raridade
             """;
@@ -69,6 +70,7 @@ public class FigurinhaDAO {
                        f.sigla_selecao, f.posicao,
                        r.id_raridade, r.nome AS raridade_nome, r.cor_hex,
                        r.valor_referencia, r.probabilidade, r.ordem,
+                       f.url_imagem_jogador, f.url_imagem_escudo,
                        COALESCE(c.quantidade, 0) AS quantidade
                   FROM figurinha f
                   JOIN raridade r ON r.id_raridade = f.id_raridade
@@ -113,6 +115,7 @@ public class FigurinhaDAO {
                        f.sigla_selecao, f.posicao,
                        r.id_raridade, r.nome AS raridade_nome, r.cor_hex,
                        r.valor_referencia, r.probabilidade, r.ordem,
+                       f.url_imagem_jogador, f.url_imagem_escudo,
                        COALESCE(c.quantidade, 0) AS quantidade
                   FROM figurinha f
                   JOIN raridade r ON r.id_raridade = f.id_raridade
@@ -162,7 +165,27 @@ public class FigurinhaDAO {
         f.setSiglaSelecao(rs.getString("sigla_selecao"));
         f.setPosicao(rs.getString("posicao"));
         f.setRaridade(mapearRaridade(rs));
+        f.setUrlImagemJogador(opcional(rs, "url_imagem_jogador"));
+        f.setUrlImagemEscudo(opcional(rs, "url_imagem_escudo"));
         return f;
+    }
+
+    /**
+     * Le uma coluna que pode nao estar no SELECT.
+     *
+     * Varios DAOs montam a propria consulta e chamam este mapear. Quando as
+     * colunas de imagem foram criadas, as tres consultas do MatchDAO e do
+     * TrocaDAO passaram a estourar "Column not found" — e as telas de troca e
+     * de historico morreram inteiras por causa de um campo decorativo.
+     * Aqui a ausencia vira null, que e exatamente o caso "sem foto": a carta
+     * cai no desenho SVG e a tela continua de pe.
+     */
+    private static String opcional(ResultSet rs, String coluna) {
+        try {
+            return rs.getString(coluna);
+        } catch (SQLException naoVeioNoSelect) {
+            return null;
+        }
     }
 
     static Raridade mapearRaridade(ResultSet rs) throws SQLException {

@@ -1,0 +1,49 @@
+# Publica a vitrine estatica (src/main/webapp-static) no GitHub Pages.
+#
+# A vitrine nao tem etapa de build: e HTML + CSS + JS de modulo nativo. O job
+# so empacota a pasta e entrega ao Pages.
+name: Publicar vitrine no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/main/webapp-static/**'
+      # O CSS e o sprite da vitrine sao copiados da aplicacao real: mudou la,
+      # a vitrine tem de ser republicada.
+      - 'src/main/webapp/assets/css/app.css'
+      - 'src/main/webapp/WEB-INF/jsp/frag/icones.jsp'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Uma publicacao por vez; nao cancela a que ja esta rodando.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Garante que o CSS e o sprite publicados sao os da aplicacao real,
+      # mesmo que a copia commitada esteja atrasada.
+      - run: ./sincronizar-vitrine.sh
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: src/main/webapp-static
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
