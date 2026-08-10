@@ -246,7 +246,7 @@ async function telaPacotes() {
 async function telaTrocas() {
   const matches = await api.matches();
 
-  const cards = matches.map(m => `
+  const cards = matches.map((m, i) => `
     <article class="match">
       <div class="card-cabecalho">
         <div>
@@ -267,18 +267,34 @@ async function telaTrocas() {
           <div class="grade-figurinhas">${m.envio.map(f => carta(f)).join('')}</div>
         </div>
       </div>
-      <a href="#/troca?codigo=${m.codigo}" class="btn btn-primario btn-bloco">Abrir negociação ${escapar(m.codigo)}</a>
+      <button class="btn btn-primario btn-bloco" data-propor="${i}">
+        ${m.codigo ? 'Abrir negociação ' + escapar(m.codigo) : 'Propor troca'}
+      </button>
     </article>`).join('');
 
   await moldura('trocas', 'Buscar Trocas', matches.length
     ? `<p class="secundario pequeno" style="margin-bottom:16px">${matches.length} parceiro(s) compatível(is)</p>
        <div class="grade-lista">${cards}</div>`
     : `<p class="vazio">Nenhum parceiro compatível no momento.</p>`);
+
+  // A troca so passa a existir quando o usuario propoe: e a proposta que gera o
+  // codigo com que a tela de negociacao trabalha.
+  raiz.querySelectorAll('[data-propor]').forEach(botao => {
+    botao.addEventListener('click', async () => {
+      botao.disabled = true;
+      try {
+        const { codigo } = await api.proporTroca(matches[botao.dataset.propor]);
+        location.hash = `#/troca?codigo=${codigo}`;
+      } catch (erro) {
+        botao.disabled = false;
+        botao.textContent = 'Falhou: ' + erro.message;
+      }
+    });
+  });
 }
 
 async function telaNegociacao(codigo) {
-  const matches = await api.matches();
-  const m = matches.find(x => x.codigo === codigo) || matches[0];
+  const m = await api.troca(codigo);
   if (!m) { location.hash = '#/trocas'; return; }
 
   const etapas = ['Proposta', 'Você confirma', 'Parceiro confirma', 'Concluída'];
@@ -300,8 +316,15 @@ async function telaNegociacao(codigo) {
         <b>${escapar(m.nome)}</b>
         <p class="secundario pequeno" style="margin-top:12px">Avaliação da troca</p>
         <span class="tag ${m.qualidade === 'Troca justa' ? 'tag-sucesso' : 'tag-aviso'}">${escapar(m.qualidade)}</span>
-        <p class="secundario pequeno" style="margin-top:16px">O parceiro já confirmou.</p>
-        <button class="btn btn-sucesso btn-bloco" id="confirmar" style="margin-top:8px">Confirmar troca</button>
+        <p class="secundario pequeno" style="margin-top:16px">
+          ${m.parceiroConfirmou === false
+              ? 'Aguardando a confirmação do parceiro.'
+              : 'O parceiro já confirmou.'}
+        </p>
+        <button class="btn btn-sucesso btn-bloco" id="confirmar" style="margin-top:8px"
+                ${m.euConfirmei ? 'disabled' : ''}>
+          ${m.euConfirmei ? 'Você já confirmou' : 'Confirmar troca'}
+        </button>
       </section>
       <section class="card">
         <div class="card-cabecalho"><h2>Você envia</h2></div>
@@ -310,12 +333,20 @@ async function telaNegociacao(codigo) {
     </div>`);
 
   document.getElementById('confirmar').addEventListener('click', async e => {
-    await api.confirmarTroca(m.codigo);
-    document.querySelectorAll('.etapa').forEach(el => el.classList.add('feita'));
-    document.getElementById('aviso').innerHTML =
-      `<div class="alerta alerta-sucesso">Troca ${escapar(m.codigo)} concluída com sucesso.</div>`;
     e.target.disabled = true;
-    e.target.textContent = 'Troca concluída';
+    const r = await api.confirmarTroca(m.codigo);
+
+    // AGUARDANDO_OUTRO: minha confirmacao entrou, mas a troca so executa quando
+    // o outro lado confirmar tambem. Dizer "concluida" aqui seria mentira.
+    const executou = r.ok !== false && r.resultado !== 'AGUARDANDO_OUTRO';
+
+    document.querySelectorAll('.etapa').forEach((el, i) => {
+      if (executou || i < 2) el.classList.add('feita');
+    });
+    document.getElementById('aviso').innerHTML = executou
+      ? `<div class="alerta alerta-sucesso">Troca ${escapar(m.codigo)} concluída com sucesso.</div>`
+      : `<div class="alerta alerta-info">Sua confirmação foi registrada. A troca executa quando ${escapar(m.nome)} confirmar.</div>`;
+    e.target.textContent = executou ? 'Troca concluída' : 'Aguardando o parceiro';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
@@ -399,6 +430,54 @@ async function telaHistorico() {
     </section>`);
 }
 
+/**
+ * Só aparece quando há backend de verdade: no modo demonstração não existe o
+ * que autenticar. Sem esta tela, abrir a vitrine com o Tomcat no ar e sem token
+ * dava uma sequência de 401 e nenhuma forma de entrar.
+ */
+async function telaLogin(erroAnterior) {
+  raiz.innerHTML = `
+    <main class="conteudo" style="grid-column:1/-1">
+      <div class="tela-acesso">
+        <div class="caixa-acesso">
+          <span class="escudo"><svg class="icone" viewBox="0 0 24 24">
+            <path d="M12 4l4 4h-8zM12 20l-4-4h8z" fill="currentColor" stroke="none"/></svg></span>
+          <h1>The Champions</h1>
+          <p class="secundario pequeno">Entre para ver o seu álbum.</p>
+          ${erroAnterior ? `<div class="alerta alerta-erro">${escapar(erroAnterior)}</div>` : ''}
+          <form id="formLogin">
+            <div class="campo">
+              <label for="email">E-mail</label>
+              <input type="email" id="email" required autocomplete="email" value="vinicius.k@email.com">
+            </div>
+            <div class="campo">
+              <label for="senha">Senha</label>
+              <input type="password" id="senha" required autocomplete="current-password" value="123456">
+            </div>
+            <button type="submit" class="btn btn-primario btn-bloco">Entrar</button>
+          </form>
+          <p class="secundario pequeno" style="margin-top:16px">
+            Conectado a <code>${escapar(api.baseURL)}</code>
+          </p>
+        </div>
+      </div>
+    </main>`;
+
+  document.getElementById('formLogin').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const botao = ev.target.querySelector('button');
+    botao.disabled = true;
+    try {
+      await api.entrar(document.getElementById('email').value,
+                       document.getElementById('senha').value);
+      location.hash = '#/dashboard';
+      await rotear();
+    } catch (erro) {
+      await telaLogin(erro.message);
+    }
+  });
+}
+
 // ------------------------------------------------------------------ roteador
 
 const TELAS = {
@@ -417,7 +496,15 @@ async function rotear() {
   const [nome, query] = bruto.split('?');
   const params = Object.fromEntries(new URLSearchParams(query || ''));
 
-  if (nome === 'sair') { api.sair(); location.href = './index.html'; return; }
+  if (nome === 'sair') {
+    api.sair();
+    if (api.modoDemo) { location.href = './index.html'; return; }
+    await telaLogin();
+    return;
+  }
+
+  // Com backend vivo e sem token, qualquer tela daria 401: pede o login antes.
+  if (!api.modoDemo && !api.token) { await telaLogin(); return; }
 
   const tela = TELAS[nome] || telaDashboard;
   try {
@@ -426,6 +513,9 @@ async function rotear() {
     else                       await tela();
     window.scrollTo(0, 0);
   } catch (erro) {
+    // O 401 ja limpou o token no api.js; aqui a sessao vencida vira login.
+    if (!api.modoDemo && !api.token) { await telaLogin(erro.message); return; }
+
     raiz.innerHTML = `<main class="conteudo"><div class="pagina">
       <div class="alerta alerta-erro">Falha ao carregar: ${escapar(erro.message)}</div>
       <a href="#/dashboard" class="btn btn-primario">Voltar ao dashboard</a>

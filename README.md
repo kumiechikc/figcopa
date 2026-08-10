@@ -179,27 +179,68 @@ login nem banco. É uma demonstração da interface, não o sistema.
    Publicar vitrine no GitHub Pages → Run workflow**.
 3. O endereço sai em `https://<usuario>.github.io/figcopa/`.
 
-### Apontar a vitrine para um backend publicado
+### Apontar a vitrine para o backend
 
-Quando o `.war` estiver no ar em algum lugar com HTTPS, a mesma vitrine passa a consumir
-dados reais. No console do navegador, na página da vitrine:
+Quando o `.war` estiver no ar, a mesma vitrine passa a consumir dados reais. No console do
+navegador, na página da vitrine:
 
 ```js
 localStorage.setItem('tc_backend_url', 'https://seu-backend.exemplo.com/the-champions');
 location.reload();
 ```
 
-O `api.js` sonda `/diagnostico` no boot; se responder, ele troca os dados de exemplo pelas
-chamadas reais e a faixa roxa de "modo demonstração" some. Para voltar ao modo demo,
+O `api.js` sonda `/api/status` no boot; se responder, ele troca os dados de exemplo pelas
+chamadas reais e a faixa roxa de "modo demonstração" some. Para voltar ao demo,
 `localStorage.removeItem('tc_backend_url')`.
 
-Duas coisas precisam existir do lado do backend antes disso funcionar:
+Falta só publicar o backend em algum lugar com HTTPS e acrescentar a origem do Pages à
+lista `ORIGENS` do `ApiFilter` — a API e o CORS já estão prontos (veja abaixo).
 
-- **CORS** — liberar a origem `https://<usuario>.github.io` nas respostas;
-- **endpoints JSON** — hoje os servlets devolvem HTML renderizado por JSP. As rotas que o
-  `api.js` espera (`/api/album`, `/api/pacotes`, `/api/trocas`, ...) ainda não existem.
+---
 
-Enquanto isso não for feito, a vitrine segue funcionando no modo demonstração.
+## API JSON
+
+Existe para a vitrine poder falar com o backend de outro domínio. **As telas JSP não
+mudaram**: a API não substitui nenhuma delas, só expõe os mesmos DAOs em JSON.
+
+| Método | Rota | O que faz |
+|---|---|---|
+| GET | `/api/status` | responde se o backend está no ar (aberta) |
+| POST | `/api/login` | e-mail + senha → token (aberta) |
+| GET | `/api/usuario/perfil` | dados de quem está logado |
+| GET | `/api/album` | catálogo com a quantidade de cada um; aceita `?selecao=BRA&status=faltantes` |
+| GET | `/api/album/resumo` | progresso, quebra por raridade e valor do acervo |
+| GET | `/api/pacotes` | pacotes fechados |
+| POST | `/api/pacotes/{id}/abrir` | abre e devolve as 7 cartas |
+| GET | `/api/trocas` | parceiros compatíveis (matching) |
+| POST | `/api/trocas/propor` | grava a proposta a partir de um match → código |
+| GET | `/api/troca/{codigo}` | uma troca, com os dois lados na sua perspectiva |
+| POST | `/api/troca/{codigo}/confirmar` | confirma o seu lado |
+| GET | `/api/ranking`, `/api/historico`, `/api/notificacoes` | listagens |
+
+### Autenticação
+
+As telas JSP usam `HttpSession` com cookie. A API não pode: a vitrine roda em outro domínio
+e o cookie de sessão não acompanha uma requisição cross-site sem `SameSite=None; Secure` —
+o que exigiria HTTPS configurado antes de qualquer teste. Por isso o token vai no cabeçalho:
+
+```bash
+TOKEN=$(curl -s -X POST localhost:8080/the-champions/api/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"vinicius.k@email.com","senha":"123456"}' | grep -o '"token":"[^"]*"')
+
+curl -H "Authorization: Bearer $TOKEN" localhost:8080/the-champions/api/album
+```
+
+Os tokens ficam **em memória** (`util/Tokens.java`), valem 8 horas e não sobrevivem a um
+restart do Tomcat. Não há tabela de sessão no modelo e o projeto é acadêmico; em produção
+isso viraria uma tabela ou um Redis.
+
+### CORS
+
+`ApiFilter` libera apenas as origens listadas em `ORIGENS` — não usa `*`. Para publicar em
+outro endereço, acrescente-o lá. Requisições de origem não listada simplesmente não recebem
+o cabeçalho, e o navegador bloqueia.
 
 ---
 
@@ -261,7 +302,7 @@ SELECT status, confirmou_proponente, confirmou_receptor, data_conclusao
 - Painel administrativo (moderação, CRUD do catálogo, relatórios gerenciais)
 - Edição manual da proposta antes de enviar (hoje a proposta segue o que o matching sugere)
 - Pacote diário automático por login
-- Endpoints JSON (`/api/...`) para a vitrine consumir o backend real
+- Cadastro pela API (`POST /api/cadastro` está reservado no filtro, mas sem implementação)
 
 ---
 
@@ -376,13 +417,26 @@ O projeto foi validado contra um MySQL real antes da entrega:
 - fluxo completo no navegador, do login à troca concluída, em 360px, 390px, 768px e 1440px.
 
 A vitrine estática foi verificada à parte, com 35 asserções no navegador: renderização das
-47 cartas com as molduras de raridade, filtros de álbum combinados (status + seleção),
+51 cartas com as molduras de raridade, filtros de álbum combinados (status + seleção),
 abertura de pacote com as 7 cartas virando, dupla confirmação, sprite de ícones resolvido,
 rota inválida caindo no dashboard e ausência de rolagem horizontal em 390px.
 
 ```bash
-cd src/main/webapp-static && python3 -m http.server 8123
+cd src/main/webapp-static && python3 -m http.server 8123   # e, noutro terminal:
+node e2e-static.js       # vitrine sozinha, com os dados de exemplo
+node e2e-integrado.js    # vitrine + Tomcat + MySQL
 ```
+
+E a integração entre as duas frentes, com mais 21 asserções (`e2e-integrado.js`): a vitrine
+servida em `:8123` consumindo o Tomcat em `:8080` — sai do modo demonstração, o progresso e
+as 51 cartas vêm do MySQL, abre um pacote real, propõe uma troca que é gravada com código
+`TRC-…`, mostra que quem propôs já confirmou o próprio lado, e devolve ao login (em vez de
+tela morta) quando o token vence.
+
+A API foi verificada também por fora, com `curl`: as 14 rotas, o preflight `OPTIONS`, o
+cabeçalho CORS presente para origem autorizada e ausente para as demais, e as recusas —
+reabrir um pacote já aberto (409), abrir pacote de outro usuário (409, sem abri-lo),
+confirmar troca alheia (403) e confirmar duas vezes (409).
 
 ---
 

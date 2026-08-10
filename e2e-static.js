@@ -25,7 +25,7 @@ function checar(nome, cond, detalhe) {
   await page.screenshot({ path: SHOTS + '/01-landing.png' });
 
   console.log('\n== Dashboard ==');
-  await page.goto(BASE + '/app.html#/dashboard', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app.html?demo=1#/dashboard', { waitUntil: 'networkidle' });
   await page.waitForSelector('.sidebar', { timeout: 5000 });
   checar('sidebar renderizou', (await page.locator('.sidebar').count()) === 1);
   checar('itens de menu', (await page.locator('.nav-item').count()) >= 7,
@@ -48,10 +48,10 @@ function checar(nome, cond, detalhe) {
   await page.screenshot({ path: SHOTS + '/02-dashboard.png' });
 
   console.log('\n== Album ==');
-  await page.goto(BASE + '/app.html#/album', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app.html?demo=1#/album', { waitUntil: 'networkidle' });
   await page.waitForSelector('.figurinha', { timeout: 5000 });
   const total = await page.locator('.figurinha').count();
-  checar('grid de figurinhas', total === 47, total + ' cartas (esperado 47)');
+  checar('grid de figurinhas', total === 51, total + ' cartas (esperado 51)');
   checar('tem faltantes', (await page.locator('.figurinha.faltante').count()) > 0,
          (await page.locator('.figurinha.faltante').count()) + '');
   checar('tem repetidas', (await page.locator('.figurinha .repetida').count()) > 0,
@@ -73,7 +73,7 @@ function checar(nome, cond, detalhe) {
          (await page.locator('.figurinha').count()) + ' cartas');
 
   console.log('\n== Pacotes ==');
-  await page.goto(BASE + '/app.html#/pacotes', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app.html?demo=1#/pacotes', { waitUntil: 'networkidle' });
   await page.waitForSelector('.pacote-card', { timeout: 5000 });
   checar('pacotes listados', (await page.locator('.pacote-card').count()) === 3,
          (await page.locator('.pacote-card').count()) + '');
@@ -89,7 +89,7 @@ function checar(nome, cond, detalhe) {
   await page.screenshot({ path: SHOTS + '/04-pacotes.png' });
 
   console.log('\n== Trocas ==');
-  await page.goto(BASE + '/app.html#/trocas', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app.html?demo=1#/trocas', { waitUntil: 'networkidle' });
   await page.waitForSelector('.match', { timeout: 5000 });
   const nm = await page.locator('.match').count();
   checar('matches listados', nm > 0, nm + ' parceiros');
@@ -97,7 +97,7 @@ function checar(nome, cond, detalhe) {
   await page.screenshot({ path: SHOTS + '/05-trocas.png' });
 
   console.log('\n== Negociacao ==');
-  await page.locator('.match a[href^="#/troca"]').first().click();
+  await page.locator('.match [data-propor]').first().click();
   await page.waitForSelector('.stepper', { timeout: 5000 });
   checar('stepper de 4 etapas', (await page.locator('.etapa').count()) === 4);
   checar('layout bilateral', (await page.locator('.negociacao > *').count()) === 3);
@@ -109,28 +109,28 @@ function checar(nome, cond, detalhe) {
 
   console.log('\n== Perfil / Ranking / Historico ==');
   for (const [rota, marca] of [['perfil', '.avatar-g'], ['ranking', '.tabela'], ['historico', '.tabela']]) {
-    await page.goto(BASE + '/app.html#/' + rota, { waitUntil: 'networkidle' });
+    await page.goto(BASE + '/app.html?demo=1#/' + rota, { waitUntil: 'networkidle' });
     await page.waitForTimeout(400);
     checar('abre ' + rota, (await page.locator(marca).count()) > 0);
   }
   await page.screenshot({ path: SHOTS + '/07-ranking.png' });
 
   console.log('\n== Rota invalida ==');
-  await page.goto(BASE + '/app.html#/naoexiste', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app.html?demo=1#/naoexiste', { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
   checar('rota desconhecida cai no dashboard', (await page.locator('.percentual').count()) > 0);
 
   console.log('\n== Responsivo 390x844 ==');
   const mob = await ctx.newPage();
   await mob.setViewportSize({ width: 390, height: 844 });
-  await mob.goto(BASE + '/app.html#/dashboard', { waitUntil: 'networkidle' });
+  await mob.goto(BASE + '/app.html?demo=1#/dashboard', { waitUntil: 'networkidle' });
   await mob.waitForTimeout(600);
   const over = await mob.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth);
   checar('sem rolagem horizontal', over <= 1, 'overflow=' + over + 'px');
   await mob.screenshot({ path: SHOTS + '/08-mobile.png' });
 
-  await mob.goto(BASE + '/app.html#/album', { waitUntil: 'networkidle' });
+  await mob.goto(BASE + '/app.html?demo=1#/album', { waitUntil: 'networkidle' });
   await mob.waitForTimeout(600);
   const over2 = await mob.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth);

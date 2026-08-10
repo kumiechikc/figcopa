@@ -67,7 +67,13 @@ const CATALOGO_BRUTO = [
   ['423','Lamine Yamal','Espanha','ESP','Atacante',3],
 
   ['461','Escudo HNS','Croacia','CRO',null,1],
-  ['463','L. Modric','Croacia','CRO','Meia',3]
+  ['463','L. Modric','Croacia','CRO','Meia',3],
+
+  ['088','T. Kubo','Japao','JAP','Meia',2],
+  ['089','W. Endo','Japao','JAP','Volante',1],
+
+  ['L-11','V. Osimhen','Nigeria','NIG','Atacante',4],
+  ['462','A. Iwobi','Nigeria','NIG','Meia',1]
 ];
 
 /**

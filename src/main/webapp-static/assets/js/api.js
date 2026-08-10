@@ -17,6 +17,11 @@ class Api {
     this.baseURL = localStorage.getItem(CHAVE_URL) || this.detectarPadrao();
     this.token = localStorage.getItem(CHAVE_TOKEN);
     this.modoDemo = true;   // confirmado por sondar()
+
+    // ?demo=1 força os dados de exemplo mesmo com backend no ar. Serve para
+    // mostrar a vitrine sem depender do servidor e para os testes da vitrine
+    // nao mudarem de comportamento so porque ha um Tomcat na mesma maquina.
+    this.demoForcado = new URLSearchParams(location.search).has('demo');
   }
 
   detectarPadrao() {
@@ -39,11 +44,13 @@ class Api {
    * a vitrine segue com os dados de demonstracao em vez de mostrar tela vazia.
    */
   async sondar() {
-    if (!this.baseURL) { this.modoDemo = true; return false; }
+    if (this.demoForcado || !this.baseURL) { this.modoDemo = true; return false; }
     try {
       const controle = new AbortController();
       const prazo = setTimeout(() => controle.abort(), 3000);
-      const r = await fetch(`${this.baseURL}/diagnostico`, {
+      // /api/status e nao /diagnostico: so as rotas sob /api/* recebem cabecalho
+      // CORS, e sem ele esta sondagem falha mesmo com o backend no ar.
+      const r = await fetch(`${this.baseURL}/api/status`, {
         signal: controle.signal,
         mode: 'cors'
       });
@@ -139,6 +146,14 @@ class Api {
     return this.pedir('/api/trocas');
   }
 
+  /** Uma troca ja gravada. No demo nao ha o que buscar: o match e a troca. */
+  async troca(codigo) {
+    if (this.modoDemo) {
+      return demo.matchesDemo().find(m => m.codigo === codigo) || null;
+    }
+    return this.pedir(`/api/troca/${encodeURIComponent(codigo)}`);
+  }
+
   async ranking() {
     if (this.modoDemo) return demo.RANKING;
     return this.pedir('/api/ranking');
@@ -157,6 +172,22 @@ class Api {
   async confirmarTroca(codigo) {
     if (this.modoDemo) return { ok: true, status: 'CONCLUIDA', codigo };
     return this.pedir(`/api/troca/${codigo}/confirmar`, { method: 'POST' });
+  }
+
+  /**
+   * Transforma um match em troca gravada e devolve o codigo.
+   * No demo o codigo ja vem pronto no proprio match — nao ha o que gravar.
+   */
+  async proporTroca(match) {
+    if (this.modoDemo) return { codigo: match.codigo, ok: true };
+    return this.pedir('/api/trocas/propor', {
+      method: 'POST',
+      body: JSON.stringify({
+        idParceiro: match.idParceiro,
+        envio: match.envio.map(f => f.id),
+        recebo: match.recebo.map(f => f.id)
+      })
+    });
   }
 }
 
