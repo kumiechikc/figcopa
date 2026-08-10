@@ -52,6 +52,11 @@ public class Pacote {
 
     public String getClasseArte() { return tipo.toLowerCase(); }
 
+    /** "hoje, 12:04" / "ontem, 19:31" para o historico de aberturas. */
+    public String getAbertoEm() {
+        return br.com.thechampions.util.Tempo.relativo(dataAbertura);
+    }
+
     /** Texto da promessa de cada tipo, mostrado na lista de pacotes. */
     public String getDescricao() {
         return switch (tipo) {

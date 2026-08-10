@@ -60,6 +60,36 @@ public class PacoteDAO {
         }
     }
 
+    /**
+     * Pacote ja aberto com o conteudo que saiu nele.
+     * Usado depois do redirect da abertura: a tela recarrega o resultado do
+     * banco em vez de manter figurinhas na sessao.
+     */
+    public Pacote buscarComConteudo(int idPacote, int idUsuario) throws SQLException {
+        Pacote p = buscar(idPacote);
+        if (p == null || p.getIdUsuario() != idUsuario || !p.isAberto()) return null;
+
+        p.setConteudo(conteudoDoPacote(idPacote));
+        marcarNovasDoPacote(idPacote, p);
+        return p;
+    }
+
+    /** Recupera a coluna era_nova para repintar as etiquetas NOVA/REPETIDA. */
+    private void marcarNovasDoPacote(int idPacote, Pacote pacote) throws SQLException {
+        String sql = "SELECT id_figurinha, era_nova FROM pacote_item WHERE id_pacote = ? ORDER BY id_pacote_item";
+        try (Connection con = ConexaoDB.obter();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idPacote);
+            try (ResultSet rs = ps.executeQuery()) {
+                int indice = 0;
+                while (rs.next() && indice < pacote.getConteudo().size()) {
+                    pacote.getConteudo().get(indice).setNovaNoAlbum(rs.getBoolean("era_nova"));
+                    indice++;
+                }
+            }
+        }
+    }
+
     public Pacote buscar(int idPacote) throws SQLException {
         String sql = """
                 SELECT id_pacote, id_usuario, tipo, qtd_figurinhas, aberto, data_criacao, data_abertura
