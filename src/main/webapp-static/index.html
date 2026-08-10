@@ -7,7 +7,13 @@
 <meta name="description" content="Marketplace peer-to-peer de troca de figurinhas da Copa do Mundo 2026.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Saira:wght@700;800;900&family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- media="print" tira a folha do caminho critico; o onload a promove quando
+     chega. Como stylesheet normal ela BLOQUEIA a renderizacao, e numa maquina
+     sem internet o navegador espera a conexao estourar antes de desenhar:
+     medido em 12,8 s por tela contra 53 ms. O display=swap ja faz o texto
+     aparecer na fonte do sistema e trocar sozinho depois. -->
+<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null" href="https://fonts.googleapis.com/css2?family=Saira:wght@700;800;900&family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@700;800;900&family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap"></noscript>
 <link rel="stylesheet" href="./assets/css/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%237C3AE3'/><path d='M12 5l4 4h-8zM12 19l-4-4h8z' fill='white'/></svg>">
 <style>
@@ -149,33 +155,50 @@
 import { CATALOGO, RARIDADES } from './assets/js/dados-demo.js';
 import { carta } from './assets/js/components.js';
 
-document.getElementById('numeros').innerHTML = [
-  [CATALOGO.length, 'figurinhas no catálogo'],
-  [new Set(CATALOGO.map(f => f.siglaSelecao)).size, 'seleções'],
-  [Object.keys(RARIDADES).length, 'níveis de raridade']
-].map(([n, rotulo]) => `<div><b>${n}</b><small>${rotulo}</small></div>`).join('');
+// Tudo dentro de uma funcao async: "await" solto no topo do modulo derruba o
+// script inteiro em navegador que nao o suporta (Safari antigo, WebView de
+// celular), e a pagina fica so com o texto estatico — sem cartas nem numeros.
+(async () => {
+  document.getElementById('numeros').innerHTML = [
+    [CATALOGO.length, 'figurinhas no catálogo'],
+    [new Set(CATALOGO.map(f => f.siglaSelecao)).size, 'seleções'],
+    [Object.keys(RARIDADES).length, 'níveis de raridade']
+  ].map(([n, rotulo]) => `<div><b>${n}</b><small>${rotulo}</small></div>`).join('');
 
-document.getElementById('sprite').innerHTML =
-  await fetch('./assets/icones.svg').then(r => r.text());
+  // Os icones sao decorativos: se o sprite falhar, as cartas ainda entram.
+  try {
+    document.getElementById('sprite').innerHTML =
+      await fetch('./assets/icones.svg').then(r => r.text());
+  } catch (e) {
+    console.warn('sprite de icones nao carregou:', e);
+  }
 
-const daRaridade = ordem => CATALOGO.find(f => f.raridade.ordem === ordem && f.quantidade > 0);
+  const daRaridade = ordem => CATALOGO.find(f => f.raridade.ordem === ordem && f.quantidade > 0);
 
-// Deck do heroi: tres cartas sobrepostas, da mais rara para a mais comum.
-document.getElementById('deck').innerHTML =
-  [daRaridade(4), daRaridade(3), daRaridade(2)]
-    .filter(Boolean)
-    .map((f, i) => carta(f, { classeExtra: `c${i + 1}` }))
-    .join('');
+  // Deck do heroi: tres cartas sobrepostas, da mais rara para a mais comum.
+  document.getElementById('deck').innerHTML =
+    [daRaridade(4), daRaridade(3), daRaridade(2)]
+      .filter(Boolean)
+      .map((f, i) => carta(f, { classeExtra: `c${i + 1}` }))
+      .join('');
 
-// Amostra: uma de cada raridade + uma faltante + uma repetida, para mostrar as molduras.
-const amostra = [
-  daRaridade(4), daRaridade(3), daRaridade(2), daRaridade(1),
-  CATALOGO.find(f => f.quantidade === 0),
-  CATALOGO.find(f => f.quantidade > 1)
-].filter(Boolean);
+  // Amostra: uma de cada raridade + uma faltante + uma repetida, para mostrar as molduras.
+  const amostra = [
+    daRaridade(4), daRaridade(3), daRaridade(2), daRaridade(1),
+    CATALOGO.find(f => f.quantidade === 0),
+    CATALOGO.find(f => f.quantidade > 1)
+  ].filter(Boolean);
 
-document.getElementById('amostra').innerHTML =
-  amostra.map(f => carta(f, { mostrarStatus: true })).join('');
+  document.getElementById('amostra').innerHTML =
+    amostra.map(f => carta(f, { mostrarStatus: true })).join('');
+})();
 </script>
+
+<noscript>
+  <p class="aviso-demo">
+    Esta página monta as cartas com JavaScript. Com o JavaScript desligado você vê
+    o texto, mas não a demonstração.
+  </p>
+</noscript>
 </body>
 </html>

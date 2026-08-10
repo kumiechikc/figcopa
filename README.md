@@ -45,7 +45,7 @@ Vinicius Kumiechiki da Silva · Marcos Vinicius
 figcopa/
 ├── 01_schema.sql                    modelo físico: 11 tabelas
 ├── 02_dados.sql                     carga de demonstração (rodar depois do schema)
-├── 03_imagens.sql                   colunas de foto do jogador/escudo (opcional)
+├── 03_imagens.sql                   só para bancos criados antes das colunas de foto
 ├── pom.xml                          dependências e empacotamento do .war
 │
 └── src/main/
@@ -133,6 +133,9 @@ Abra o XAMPP, dê **Start** em MySQL, e vá em http://localhost/phpmyadmin → a
 
 1. Cole o conteúdo inteiro de `01_schema.sql` → **Executar**
 2. Cole o conteúdo inteiro de `02_dados.sql` → **Executar**
+
+**São só esses dois.** O `03_imagens.sql` existe apenas para quem já tinha o banco
+criado antes das colunas de foto; num banco novo ele dá erro de coluna duplicada.
 
 Confira a carga:
 
@@ -454,7 +457,24 @@ cd src/main/webapp-static && python3 -m http.server 8123   # e, noutro terminal:
 node e2e-static.js       # vitrine sozinha, com os dados de exemplo
 node e2e-contrato.js     # contrato de markup e estilo com o app.css
 node e2e-integrado.js    # vitrine + Tomcat + MySQL
+node e2e-robustez.js     # aplicação JSP fora do caminho feliz
 ```
+
+### Robustez
+
+`e2e-robustez.js` cobre o que só aparece quando alguém sai do roteiro — que é
+justamente o que acontece numa demonstração ao vivo:
+
+- **toda rota responde** sem stack trace, incluindo código de troca inexistente e
+  URL desconhecida (uma JSP com erro só estoura quando alguém abre aquela tela);
+- **entrada hostil** — `' OR '1'='1` no login e nos filtros do álbum, parâmetro
+  numérico recebendo texto, e um nome de usuário com `<script>` que precisa
+  aparecer escapado em vez de executar;
+- **concorrência** — dois POSTs simultâneos no mesmo pacote. É para isto que
+  existe o `SELECT ... FOR UPDATE` do `PacoteDAO`: o segundo tem de ser recusado,
+  nunca creditar 14 figurinhas;
+- **autorização** — quem não participa da troca não vê o botão de confirmar, tela
+  interna sem sessão não vaza conteúdo, e o logout invalida a sessão de verdade.
 
 Mais 23 asserções de contrato (`e2e-contrato.js`): a estrutura que o `app.css` exige, o
 estilo computado que prova que ele pegou, o giro medido pelo `transform` e o comportamento
@@ -480,5 +500,6 @@ confirmar troca alheia (403) e confirmar duas vezes (409).
 | `ClassNotFoundException: jakarta.servlet.http.HttpServlet` | Tomcat 9 em vez de 10+ |
 | `Access denied for user` | usuário/senha errados no `database.properties` |
 | `Unknown database 'the_champions'` | os `.sql` não foram importados |
+| `Unknown column 'f.url_imagem_jogador'` | banco criado com uma versão antiga do `01_schema.sql` — rode o `03_imagens.sql` uma vez, ou recrie o banco |
 | Página em branco ou erro 500 | abra `/diagnostico`, que aponta a causa |
 | Fontes sem o visual esperado | máquina sem internet — o Google Fonts não carrega, o layout continua funcionando |

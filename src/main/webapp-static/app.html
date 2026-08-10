@@ -7,7 +7,13 @@
 <meta name="description" content="Marketplace peer-to-peer de troca de figurinhas da Copa do Mundo 2026.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Saira:wght@700;800;900&family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- media="print" tira a folha do caminho critico; o onload a promove quando
+     chega. Como stylesheet normal ela BLOQUEIA a renderizacao, e numa maquina
+     sem internet o navegador espera a conexao estourar antes de desenhar:
+     medido em 12,8 s por tela contra 53 ms. O display=swap ja faz o texto
+     aparecer na fonte do sistema e trocar sozinho depois. -->
+<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null" href="https://fonts.googleapis.com/css2?family=Saira:wght@700;800;900&family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@700;800;900&family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap"></noscript>
 <link rel="stylesheet" href="./assets/css/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%237C3AE3'/><path d='M12 5l4 4h-8zM12 19l-4-4h8z' fill='white'/></svg>">
 <style>
@@ -626,8 +632,15 @@ async function rotear() {
 // ---------------------------------------------------------------------- boot
 
 (async () => {
-  document.getElementById('sprite').innerHTML =
-    await fetch('./assets/icones.svg').then(r => r.text());
+ try {
+  // Os icones sao decorativos: um sprite que nao carrega nao pode impedir a
+  // aplicacao de aparecer. Sem este try, a tela inteira ficava em branco.
+  try {
+    document.getElementById('sprite').innerHTML =
+      await fetch('./assets/icones.svg').then(r => r.text());
+  } catch (e) {
+    console.warn('sprite de icones nao carregou:', e);
+  }
 
   await api.sondar();
 
@@ -640,7 +653,32 @@ async function rotear() {
 
   window.addEventListener('hashchange', rotear);
   await rotear();
+
+ } catch (erro) {
+  // Uma tela em branco nao diz nada a quem abriu. Se o boot falhar — modulo que
+  // o navegador nao entende, arquivo que faltou — pelo menos explica o que houve.
+  console.error('falha ao iniciar a vitrine:', erro);
+  document.getElementById('app').innerHTML = `
+    <main class="conteudo" style="grid-column:1/-1"><div class="pagina">
+      <div class="alerta alerta-erro" role="alert">
+        <b>A vitrine não conseguiu iniciar.</b><br>
+        ${String(erro && erro.message || erro)}
+      </div>
+      <p class="secundario pequeno">
+        Se o seu navegador for antigo, tente um mais recente.
+        <a href="./index.html">Voltar à página inicial</a>.
+      </p>
+    </div></main>`;
+ }
 })();
 </script>
+
+<noscript>
+  <div style="padding:32px;font-family:system-ui,sans-serif;color:#E6E9F2;background:#0B1020">
+    <h1>The Champions</h1>
+    <p>Esta vitrine é montada com JavaScript. Ligue o JavaScript para navegar pelas telas,
+       ou veja o código em <a href="https://github.com/kumiechikc/figcopa">github.com/kumiechikc/figcopa</a>.</p>
+  </div>
+</noscript>
 </body>
 </html>

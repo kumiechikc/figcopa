@@ -265,6 +265,19 @@ svg.icone-g { width: 20px; height: 20px; }
 /* Tabela larga rola dentro do proprio cartao, nunca empurra a pagina. */
 .rolagem-x { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
 
+/* Sombra que aparece so no lado onde existe conteudo escondido.
+   No celular a coluna cortada costuma ser a de situacao — a mais importante da
+   linha — e nada avisava que era possivel arrastar. Truque de duas camadas:
+   os gradientes "local" rolam junto e cobrem a sombra quando se chega ao fim,
+   entao a dica some sozinha. Sem JavaScript. */
+.rolagem-x {
+  background:
+    linear-gradient(to right, var(--azul-900) 40%, rgba(15,22,41,0)) left center / 32px 100% no-repeat local,
+    linear-gradient(to left,  var(--azul-900) 40%, rgba(15,22,41,0)) right center / 32px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%,   rgba(0,0,0,.42), rgba(0,0,0,0)) left center / 13px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%,rgba(0,0,0,.42), rgba(0,0,0,0)) right center / 13px 100% no-repeat scroll;
+}
+
 /* Item de grid tem min-width:auto: ele cresce ate caber o conteudo e estoura
    a pagina, em vez de deixar o filho rolar. Zerar isso e o que faz o
    .rolagem-x das tabelas realmente funcionar. */
@@ -939,4 +952,10 @@ svg.icone-g { width: 20px; height: 20px; }
   .troca-lados { grid-template-columns: 1fr; }
   .troca-lados .seta { transform: rotate(90deg); }
   .landing-topo nav { display: none; }
+
+  /* 9px cabe na tela grande, mas no celular a legenda da carta ("Lendária ·
+     ATA") fica no limite do ilegivel. Um ponto a mais ainda cabe na carta de
+     ~105px sem quebrar a linha. */
+  .figurinha .legenda small,
+  .match .ganho small { font-size: 10px; }
 }
