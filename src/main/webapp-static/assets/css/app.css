@@ -952,4 +952,10 @@ svg.icone-g { width: 20px; height: 20px; }
   .troca-lados { grid-template-columns: 1fr; }
   .troca-lados .seta { transform: rotate(90deg); }
   .landing-topo nav { display: none; }
+
+  /* 9px cabe na tela grande, mas no celular a legenda da carta ("Lendária ·
+     ATA") fica no limite do ilegivel. Um ponto a mais ainda cabe na carta de
+     ~105px sem quebrar a linha. */
+  .figurinha .legenda small,
+  .match .ganho small { font-size: 10px; }
 }

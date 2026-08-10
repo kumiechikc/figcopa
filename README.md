@@ -457,7 +457,24 @@ cd src/main/webapp-static && python3 -m http.server 8123   # e, noutro terminal:
 node e2e-static.js       # vitrine sozinha, com os dados de exemplo
 node e2e-contrato.js     # contrato de markup e estilo com o app.css
 node e2e-integrado.js    # vitrine + Tomcat + MySQL
+node e2e-robustez.js     # aplicação JSP fora do caminho feliz
 ```
+
+### Robustez
+
+`e2e-robustez.js` cobre o que só aparece quando alguém sai do roteiro — que é
+justamente o que acontece numa demonstração ao vivo:
+
+- **toda rota responde** sem stack trace, incluindo código de troca inexistente e
+  URL desconhecida (uma JSP com erro só estoura quando alguém abre aquela tela);
+- **entrada hostil** — `' OR '1'='1` no login e nos filtros do álbum, parâmetro
+  numérico recebendo texto, e um nome de usuário com `<script>` que precisa
+  aparecer escapado em vez de executar;
+- **concorrência** — dois POSTs simultâneos no mesmo pacote. É para isto que
+  existe o `SELECT ... FOR UPDATE` do `PacoteDAO`: o segundo tem de ser recusado,
+  nunca creditar 14 figurinhas;
+- **autorização** — quem não participa da troca não vê o botão de confirmar, tela
+  interna sem sessão não vaza conteúdo, e o logout invalida a sessão de verdade.
 
 Mais 23 asserções de contrato (`e2e-contrato.js`): a estrutura que o `app.css` exige, o
 estilo computado que prova que ele pegou, o giro medido pelo `transform` e o comportamento
