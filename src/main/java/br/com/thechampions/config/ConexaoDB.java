@@ -19,10 +19,15 @@ public final class ConexaoDB {
 
     private static final String ARQUIVO_CONFIG = "database.properties";
 
+    /**
+     * connectionTimeZone=SERVER: o driver usa o fuso do proprio MySQL em vez de
+     * converter as datas. Fixar um fuso aqui desloca todos os horarios quando o
+     * servidor esta em outro fuso — um prazo de 22h aparecia como 25h na tela.
+     */
     private static final String URL_PADRAO =
             "jdbc:mysql://localhost:3306/the_champions"
             + "?useSSL=false&allowPublicKeyRetrieval=true"
-            + "&serverTimezone=America/Sao_Paulo&characterEncoding=UTF-8";
+            + "&connectionTimeZone=SERVER&characterEncoding=UTF-8";
     private static final String USUARIO_PADRAO = "root";
     private static final String SENHA_PADRAO = "";
 
