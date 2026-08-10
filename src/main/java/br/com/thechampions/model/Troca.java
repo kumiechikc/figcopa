@@ -99,6 +99,15 @@ public class Troca {
         return proponente != null && proponente.getId() == idUsuario;
     }
 
+    /**
+     * Momento que interessa mostrar na lista: a conclusao quando existe,
+     * senao a criacao. Formatado como "hoje, 14:32" / "ontem, 21:47".
+     */
+    public String getQuando() {
+        return br.com.thechampions.util.Tempo.relativo(
+                dataConclusao != null ? dataConclusao : dataCriacao);
+    }
+
     /** Quanto falta expirar, no formato "22h 10min". Vazio se nao expira. */
     public String getTempoParaExpirar() {
         if (dataExpiracao == null) return "";
