@@ -50,6 +50,14 @@ CREATE TABLE figurinha (
   sigla_selecao CHAR(3)      NOT NULL,
   posicao       VARCHAR(30)      NULL,   -- NULL para escudos/itens especiais
   id_raridade   INT          NOT NULL,
+
+  -- Foto do jogador e do escudo. Ficam NULL enquanto nao houver imagem: a carta
+  -- cai no desenho SVG. As consultas do FigurinhaDAO citam estas duas colunas,
+  -- entao elas precisam existir mesmo vazias — sem isso o album, os pacotes e
+  -- as trocas falham com "Unknown column".
+  url_imagem_jogador VARCHAR(500) NULL,
+  url_imagem_escudo  VARCHAR(500) NULL,
+
   CONSTRAINT fk_figurinha_raridade
     FOREIGN KEY (id_raridade) REFERENCES raridade(id_raridade)
 ) ENGINE=InnoDB;

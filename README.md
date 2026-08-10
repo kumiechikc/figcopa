@@ -45,7 +45,7 @@ Vinicius Kumiechiki da Silva · Marcos Vinicius
 figcopa/
 ├── 01_schema.sql                    modelo físico: 11 tabelas
 ├── 02_dados.sql                     carga de demonstração (rodar depois do schema)
-├── 03_imagens.sql                   colunas de foto do jogador/escudo (opcional)
+├── 03_imagens.sql                   só para bancos criados antes das colunas de foto
 ├── pom.xml                          dependências e empacotamento do .war
 │
 └── src/main/
@@ -133,6 +133,9 @@ Abra o XAMPP, dê **Start** em MySQL, e vá em http://localhost/phpmyadmin → a
 
 1. Cole o conteúdo inteiro de `01_schema.sql` → **Executar**
 2. Cole o conteúdo inteiro de `02_dados.sql` → **Executar**
+
+**São só esses dois.** O `03_imagens.sql` existe apenas para quem já tinha o banco
+criado antes das colunas de foto; num banco novo ele dá erro de coluna duplicada.
 
 Confira a carga:
 
@@ -480,5 +483,6 @@ confirmar troca alheia (403) e confirmar duas vezes (409).
 | `ClassNotFoundException: jakarta.servlet.http.HttpServlet` | Tomcat 9 em vez de 10+ |
 | `Access denied for user` | usuário/senha errados no `database.properties` |
 | `Unknown database 'the_champions'` | os `.sql` não foram importados |
+| `Unknown column 'f.url_imagem_jogador'` | banco criado com uma versão antiga do `01_schema.sql` — rode o `03_imagens.sql` uma vez, ou recrie o banco |
 | Página em branco ou erro 500 | abra `/diagnostico`, que aponta a causa |
 | Fontes sem o visual esperado | máquina sem internet — o Google Fonts não carrega, o layout continua funcionando |
