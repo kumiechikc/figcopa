@@ -1,0 +1,15 @@
+# -----------------------------------------------------------------------------
+# The Champions - configuracao de acesso ao banco
+#
+# COPIE este arquivo para "database.properties" (mesma pasta) e preencha com os
+# dados do MySQL da sua maquina. O arquivo real esta no .gitignore e NUNCA deve
+# ser commitado.
+#
+#   cp src/main/resources/database.properties.example src/main/resources/database.properties
+#
+# No XAMPP padrao o usuario e "root" e a senha e vazia.
+# -----------------------------------------------------------------------------
+
+db.url=jdbc:mysql://localhost:3306/the_champions?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo&characterEncoding=UTF-8
+db.usuario=root
+db.senha=
