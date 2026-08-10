@@ -45,6 +45,7 @@ Vinicius Kumiechiki da Silva · Marcos Vinicius
 figcopa/
 ├── 01_schema.sql                    modelo físico: 11 tabelas
 ├── 02_dados.sql                     carga de demonstração (rodar depois do schema)
+├── 03_imagens.sql                   colunas de foto do jogador/escudo (opcional)
 ├── pom.xml                          dependências e empacotamento do .war
 │
 └── src/main/
@@ -60,15 +61,30 @@ figcopa/
     │   ├── database.properties.example   modelo de configuração (vai para o repo)
     │   └── database.properties           credenciais reais (ignorado pelo Git)
     │
-    └── webapp/
-        ├── index.jsp                landing pública
-        ├── assets/css/app.css       identidade visual completa
-        ├── assets/js/               animações (barras de progresso e revelação de pacote)
-        └── WEB-INF/
-            ├── web.xml
-            ├── tags/carta.tag       componente da figurinha, reusado em todas as telas
-            └── jsp/                 telas internas + fragmentos de layout
+    ├── webapp/                      APLICAÇÃO REAL (Tomcat + MySQL)
+    │   ├── index.jsp                landing pública
+    │   ├── assets/css/app.css       identidade visual completa
+    │   ├── assets/js/               animações (barras de progresso e revelação de pacote)
+    │   └── WEB-INF/
+    │       ├── web.xml
+    │       ├── tags/carta.tag       componente da figurinha, reusado em todas as telas
+    │       └── jsp/                 telas internas + fragmentos de layout
+    │
+    └── webapp-static/               VITRINE do GitHub Pages (sem servidor)
+        ├── index.html               landing
+        ├── app.html                 SPA com todas as telas internas
+        └── assets/
+            ├── css/app.css          cópia do CSS da aplicação real ¹
+            ├── icones.svg           sprite extraído de frag/icones.jsp ¹
+            └── js/
+                ├── api.js           usa o backend se houver; senão, os dados de exemplo
+                ├── dados-demo.js    catálogo espelhando o 02_dados.sql
+                └── components.js    carta.tag reescrito em JS
 ```
+
+¹ Gerados por `./sincronizar-vitrine.sh` — a fonte de verdade é a pasta `webapp/`. Rode o
+script depois de mexer no `app.css` ou no `icones.jsp`; o workflow do Pages roda sozinho
+antes de publicar.
 
 ---
 
@@ -138,6 +154,55 @@ funciona; se não, ela aponta a causa exata.
 
 ---
 
+## Vitrine no GitHub Pages
+
+O GitHub Pages serve **apenas arquivos estáticos** — ele não roda Java nem MySQL. Por
+isso a aplicação real não pode ser hospedada lá. O que vai para o Pages é a pasta
+`src/main/webapp-static`: uma vitrine que reproduz todas as telas com o mesmo CSS e o
+mesmo catálogo do `02_dados.sql`, rodando inteira no navegador.
+
+O que a vitrine faz:
+
+- navega por todas as telas (dashboard, álbum com filtros, pacotes, trocas, negociação,
+  perfil, ranking, histórico);
+- abre pacotes com o mesmo sorteio ponderado por raridade do backend;
+- fecha uma negociação com a animação de dupla confirmação.
+
+O que ela **não** faz: nada é persistido — recarregar a página zera tudo. Não há cadastro,
+login nem banco. É uma demonstração da interface, não o sistema.
+
+### Ligar
+
+1. No repositório: **Settings → Pages → Source: GitHub Actions**.
+2. Um push na `main` que toque `src/main/webapp-static/**` dispara o workflow
+   `.github/workflows/pages.yml`. Para publicar sem esperar um push, use **Actions →
+   Publicar vitrine no GitHub Pages → Run workflow**.
+3. O endereço sai em `https://<usuario>.github.io/figcopa/`.
+
+### Apontar a vitrine para um backend publicado
+
+Quando o `.war` estiver no ar em algum lugar com HTTPS, a mesma vitrine passa a consumir
+dados reais. No console do navegador, na página da vitrine:
+
+```js
+localStorage.setItem('tc_backend_url', 'https://seu-backend.exemplo.com/the-champions');
+location.reload();
+```
+
+O `api.js` sonda `/diagnostico` no boot; se responder, ele troca os dados de exemplo pelas
+chamadas reais e a faixa roxa de "modo demonstração" some. Para voltar ao modo demo,
+`localStorage.removeItem('tc_backend_url')`.
+
+Duas coisas precisam existir do lado do backend antes disso funcionar:
+
+- **CORS** — liberar a origem `https://<usuario>.github.io` nas respostas;
+- **endpoints JSON** — hoje os servlets devolvem HTML renderizado por JSP. As rotas que o
+  `api.js` espera (`/api/album`, `/api/pacotes`, `/api/trocas`, ...) ainda não existem.
+
+Enquanto isso não for feito, a vitrine segue funcionando no modo demonstração.
+
+---
+
 ## Usuários de teste
 
 Senha de todos: `123456`
@@ -196,6 +261,52 @@ SELECT status, confirmou_proponente, confirmou_receptor, data_conclusao
 - Painel administrativo (moderação, CRUD do catálogo, relatórios gerenciais)
 - Edição manual da proposta antes de enviar (hoje a proposta segue o que o matching sugere)
 - Pacote diário automático por login
+- Endpoints JSON (`/api/...`) para a vitrine consumir o backend real
+
+---
+
+## Fotos dos jogadores
+
+As cartas desenham um busto em SVG colorido pela raridade. A estrutura para trocar isso
+por fotos reais **já está pronta** — falta só a fonte das imagens.
+
+O que existe:
+
+- `03_imagens.sql` adiciona `url_imagem_jogador` e `url_imagem_escudo` na tabela `figurinha`;
+- `FigurinhaDAO` já traz as duas colunas em todas as consultas;
+- `carta.tag` (Tomcat) e `components.js` (vitrine) usam `<img>` quando a URL existe e caem
+  no SVG quando ela é `NULL`.
+
+Ou seja: preencher as colunas é o suficiente para as fotos aparecerem nas duas frentes.
+
+```sql
+UPDATE figurinha SET url_imagem_jogador = 'https://.../vinicius-jr.jpg'
+ WHERE numero_album = 'L-07';
+```
+
+### Sobre usar as imagens da Panini
+
+Não dá para simplesmente baixar do site da Panini e subir para o repositório. As figurinhas
+e as fotos são material licenciado — republicar isso num site público (que é exatamente o
+que o GitHub Pages faz) é redistribuição de obra protegida. Some-se a isso que a arte da
+Panini é o produto que este projeto imita, o que torna o uso ainda mais difícil de defender
+como citação.
+
+O caminho limpo é usar fotos com licença livre. O **Wikimedia Commons** tem retrato de boa
+parte dos jogadores das seleções em CC BY-SA, que pode ser usado desde que se credite o
+autor e mantenha a licença. A API é pública:
+
+```
+https://commons.wikimedia.org/w/api.php?action=query&titles=File:NOME.jpg
+  &prop=imageinfo&iiprop=url|extmetadata&format=json
+```
+
+Se for por esse caminho, guarde junto o autor e a licença de cada foto e mostre o crédito
+em algum lugar da interface — é o que a licença exige.
+
+> Nenhuma imagem foi baixada até aqui: o ambiente onde este código foi escrito bloqueia
+> saída de rede para `panini.com.br` e `commons.wikimedia.org`, então a coleta ficou para
+> quem tiver rede aberta.
 
 ---
 
@@ -263,6 +374,15 @@ O projeto foi validado contra um MySQL real antes da entrega:
   seis usuários, contagens do álbum, matching, sorteio de pacote, dupla confirmação e as
   tentativas que devem falhar (reabrir pacote, confirmar troca alheia, confirmar duas vezes);
 - fluxo completo no navegador, do login à troca concluída, em 360px, 390px, 768px e 1440px.
+
+A vitrine estática foi verificada à parte, com 35 asserções no navegador: renderização das
+47 cartas com as molduras de raridade, filtros de álbum combinados (status + seleção),
+abertura de pacote com as 7 cartas virando, dupla confirmação, sprite de ícones resolvido,
+rota inválida caindo no dashboard e ausência de rolagem horizontal em 390px.
+
+```bash
+cd src/main/webapp-static && python3 -m http.server 8123
+```
 
 ---
 

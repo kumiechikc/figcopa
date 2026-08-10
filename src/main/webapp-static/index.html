@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Champions — troca de figurinhas da Copa 2026</title>
+<meta name="description" content="Marketplace peer-to-peer de troca de figurinhas da Copa do Mundo 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@700;800;900&family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%237C3AE3'/><path d='M12 5l4 4h-8zM12 19l-4-4h8z' fill='white'/></svg>">
+<style>
+  .aviso-demo{max-width:640px;margin:28px auto 0;padding:14px 18px;border-radius:12px;
+    background:rgba(124,58,227,.10);border:1px solid rgba(124,58,227,.35);
+    font-size:13px;line-height:1.6;color:var(--txt-2)}
+  .passo .icone{width:26px;height:26px;color:var(--roxo-400);margin-bottom:10px}
+  .vitrine{max-width:1100px;margin:0 auto;padding:0 var(--e4)}
+  .vitrine-cartas{margin-top:56px}
+</style>
+</head>
+<body>
+
+<div id="sprite" hidden></div>
+
+<header class="landing-topo">
+  <a class="marca" href="./index.html" style="text-decoration:none;color:inherit">
+    <span class="escudo"><svg class="icone" viewBox="0 0 24 24">
+      <path d="M12 4l4 4h-8zM12 20l-4-4h8z" fill="currentColor" stroke="none"/></svg></span>
+    <span class="marca-nome">The<br>Champ<span>ions</span></span>
+  </a>
+  <a href="./app.html#/dashboard" class="btn btn-primario">Entrar na vitrine</a>
+</header>
+
+<main class="vitrine">
+
+  <section class="heroi">
+    <div>
+      <span class="selo"><i></i> Copa do Mundo 2026</span>
+      <h1>Você <em>não tem</em> a figurinha.<br>Alguém tem duas.</h1>
+      <p class="chamada">
+        The Champions cruza o seu álbum com o de outros colecionadores e encontra
+        sozinho quem tem o que falta pra você — e quer o que sobra.
+      </p>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px">
+        <a href="./app.html#/dashboard" class="btn btn-primario">Ver a vitrine</a>
+        <a href="#como-funciona" class="btn btn-secundario">Como funciona</a>
+      </div>
+
+      <div class="numeros-comunidade">
+        <div><b>47</b><small>figurinhas no catálogo</small></div>
+        <div><b>8</b><small>seleções</small></div>
+        <div><b>4</b><small>níveis de raridade</small></div>
+      </div>
+    </div>
+
+    <div class="deck" id="deck"></div>
+  </section>
+
+  <p class="aviso-demo">
+    Esta página é a <b>vitrine de demonstração</b>: roda inteira no navegador, com
+    dados de exemplo e sem servidor por trás. O sistema completo — cadastro, login,
+    abertura de pacotes e troca com dupla confirmação — roda em Java/Tomcat com
+    MySQL. O código está no
+    <a href="https://github.com/kumiechikc/figcopa">repositório</a>.
+  </p>
+
+  <section id="como-funciona" style="margin-top:56px">
+    <h2>Como funciona</h2>
+    <div class="grade grade-4" style="margin-top:20px">
+      <article class="passo">
+        <div class="topo"><span class="ic"><svg class="icone"><use href="#i-album"/></svg></span></div>
+        <h3>1. Monte seu álbum</h3>
+        <p class="secundario pequeno">Registre o que você tem. O sistema separa
+          faltantes das repetidas automaticamente.</p>
+      </article>
+      <article class="passo">
+        <div class="topo"><span class="ic"><svg class="icone"><use href="#i-pacote"/></svg></span></div>
+        <h3>2. Abra pacotes</h3>
+        <p class="secundario pequeno">Sete cartas por pacote, sorteadas por
+          probabilidade real de raridade — de comum a lendária.</p>
+      </article>
+      <article class="passo">
+        <div class="topo"><span class="ic"><svg class="icone"><use href="#i-troca"/></svg></span></div>
+        <h3>3. Receba os matches</h3>
+        <p class="secundario pequeno">O cruzamento é automático: só aparece quem
+          fecha os dois lados da troca.</p>
+      </article>
+      <article class="passo">
+        <div class="topo"><span class="ic"><svg class="icone"><use href="#i-usuario"/></svg></span></div>
+        <h3>4. Feche a troca</h3>
+        <p class="secundario pequeno">Dupla confirmação: as figurinhas só trocam de
+          dono quando os dois aceitam.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="vitrine-cartas">
+    <h2>As cartas</h2>
+    <p class="secundario pequeno" style="margin-bottom:20px">
+      A moldura muda com a raridade. Faltantes aparecem apagadas com “?”.
+    </p>
+    <div class="grade-figurinhas" id="amostra"></div>
+  </section>
+
+  <section style="margin-top:72px">
+    <h2>O que está pronto</h2>
+    <div class="grade grade-2" style="margin-top:20px">
+      <div class="card">
+        <div class="card-cabecalho"><h3>Backend (Java)</h3></div>
+        <ul class="secundario pequeno" style="line-height:2;padding-left:18px">
+          <li>Cadastro e login com BCrypt</li>
+          <li>Sorteio de pacote por probabilidade</li>
+          <li>Matching automático de trocas</li>
+          <li>Troca em transação SQL com dupla confirmação</li>
+          <li>Ranking, histórico e reputação</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-cabecalho"><h3>Stack</h3></div>
+        <ul class="secundario pequeno" style="line-height:2;padding-left:18px">
+          <li>Java 17 · Servlets + JSP (Jakarta)</li>
+          <li>JDBC puro — sem ORM</li>
+          <li>MySQL 8 / MariaDB</li>
+          <li>Tomcat 10+</li>
+          <li>Esta vitrine: HTML + CSS + JS, sem build</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="rodape" style="margin-top:72px">
+    <span class="secundario pequeno">The Champions · Copa do Mundo 2026</span>
+    <a class="secundario pequeno" href="https://github.com/kumiechikc/figcopa">Código no GitHub</a>
+  </footer>
+</main>
+
+<script type="module">
+import { CATALOGO } from './assets/js/dados-demo.js';
+import { carta } from './assets/js/components.js';
+
+document.getElementById('sprite').innerHTML =
+  await fetch('./assets/icones.svg').then(r => r.text());
+
+const daRaridade = ordem => CATALOGO.find(f => f.raridade.ordem === ordem && f.quantidade > 0);
+
+// Deck do heroi: tres cartas sobrepostas, da mais rara para a mais comum.
+document.getElementById('deck').innerHTML =
+  [daRaridade(4), daRaridade(3), daRaridade(2)]
+    .filter(Boolean)
+    .map((f, i) => carta(f, { classeExtra: `c${i + 1}` }))
+    .join('');
+
+// Amostra: uma de cada raridade + uma faltante + uma repetida, para mostrar as molduras.
+const amostra = [
+  daRaridade(4), daRaridade(3), daRaridade(2), daRaridade(1),
+  CATALOGO.find(f => f.quantidade === 0),
+  CATALOGO.find(f => f.quantidade > 1)
+].filter(Boolean);
+
+document.getElementById('amostra').innerHTML =
+  amostra.map(f => carta(f, { mostrarStatus: true })).join('');
+</script>
+</body>
+</html>
