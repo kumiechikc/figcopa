@@ -74,11 +74,21 @@ class Api {
       mode: 'cors'
     });
 
-    if (r.status === 401) {
-      this.definirToken(null);
-      throw new Error('Sessão expirada. Entre novamente.');
+    if (!r.ok) {
+      // O backend manda {"erro": "..."} com o motivo; usar isso evita dizer
+      // "sessão expirada" para quem so errou a senha.
+      const motivo = await r.json().then(c => c && c.erro).catch(() => null);
+
+      if (r.status === 401) {
+        const tinhaToken = Boolean(this.token);
+        this.definirToken(null);
+        // Sem token, um 401 e credencial recusada — nao sessao vencida.
+        throw new Error(tinhaToken
+          ? 'Sessão expirada. Entre novamente.'
+          : (motivo || 'E-mail ou senha inválidos.'));
+      }
+      throw new Error(motivo || `Backend respondeu ${r.status}`);
     }
-    if (!r.ok) throw new Error(`Backend respondeu ${r.status}`);
     return r.json();
   }
 

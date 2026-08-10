@@ -13,6 +13,10 @@ destino="$raiz/src/main/webapp-static"
 cp "$origem/assets/css/app.css" "$destino/assets/css/app.css"
 echo "  css      → assets/css/app.css"
 
+# A coreografia da revelacao do pacote e a mesma nas duas frentes.
+cp "$origem/assets/js/revelacao.js" "$destino/assets/js/revelacao.js"
+echo "  js       → assets/js/revelacao.js"
+
 # O sprite mora numa JSP; a vitrine precisa dele como .svg puro.
 # As 5 primeiras linhas sao o comentario JSP <%-- ... --%>.
 tail -n +6 "$origem/WEB-INF/jsp/frag/icones.jsp" > "$destino/assets/icones.svg"

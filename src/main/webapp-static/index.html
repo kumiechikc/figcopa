@@ -14,7 +14,6 @@
   .aviso-demo{max-width:640px;margin:28px auto 0;padding:14px 18px;border-radius:12px;
     background:rgba(124,58,227,.10);border:1px solid rgba(124,58,227,.35);
     font-size:13px;line-height:1.6;color:var(--txt-2)}
-  .passo .icone{width:26px;height:26px;color:var(--roxo-400);margin-bottom:10px}
   .vitrine{max-width:1100px;margin:0 auto;padding:0 var(--e4)}
   .vitrine-cartas{margin-top:56px}
 </style>
@@ -48,11 +47,9 @@
         <a href="#como-funciona" class="btn btn-secundario">Como funciona</a>
       </div>
 
-      <div class="numeros-comunidade">
-        <div><b>47</b><small>figurinhas no catálogo</small></div>
-        <div><b>8</b><small>seleções</small></div>
-        <div><b>4</b><small>níveis de raridade</small></div>
-      </div>
+      <!-- Preenchido a partir do próprio catálogo: número fixo aqui vira mentira
+           na primeira figurinha que entrar no 02_dados.sql. -->
+      <div class="numeros-comunidade" id="numeros"></div>
     </div>
 
     <div class="deck" id="deck"></div>
@@ -70,27 +67,39 @@
     <h2>Como funciona</h2>
     <div class="grade grade-4" style="margin-top:20px">
       <article class="passo">
-        <div class="topo"><span class="ic"><svg class="icone"><use href="#i-album"/></svg></span></div>
-        <h3>1. Monte seu álbum</h3>
-        <p class="secundario pequeno">Registre o que você tem. O sistema separa
+        <div class="topo">
+          <span class="ic"><svg class="icone"><use href="#i-album"/></svg></span>
+          <span class="n">1</span>
+        </div>
+        <h3>Monte seu álbum</h3>
+        <p>Registre o que você tem. O sistema separa
           faltantes das repetidas automaticamente.</p>
       </article>
       <article class="passo">
-        <div class="topo"><span class="ic"><svg class="icone"><use href="#i-pacote"/></svg></span></div>
-        <h3>2. Abra pacotes</h3>
-        <p class="secundario pequeno">Sete cartas por pacote, sorteadas por
+        <div class="topo">
+          <span class="ic"><svg class="icone"><use href="#i-pacote"/></svg></span>
+          <span class="n">2</span>
+        </div>
+        <h3>Abra pacotes</h3>
+        <p>Sete cartas por pacote, sorteadas por
           probabilidade real de raridade — de comum a lendária.</p>
       </article>
       <article class="passo">
-        <div class="topo"><span class="ic"><svg class="icone"><use href="#i-troca"/></svg></span></div>
-        <h3>3. Receba os matches</h3>
-        <p class="secundario pequeno">O cruzamento é automático: só aparece quem
+        <div class="topo">
+          <span class="ic"><svg class="icone"><use href="#i-troca"/></svg></span>
+          <span class="n">3</span>
+        </div>
+        <h3>Receba os matches</h3>
+        <p>O cruzamento é automático: só aparece quem
           fecha os dois lados da troca.</p>
       </article>
       <article class="passo">
-        <div class="topo"><span class="ic"><svg class="icone"><use href="#i-usuario"/></svg></span></div>
-        <h3>4. Feche a troca</h3>
-        <p class="secundario pequeno">Dupla confirmação: as figurinhas só trocam de
+        <div class="topo">
+          <span class="ic"><svg class="icone"><use href="#i-usuario"/></svg></span>
+          <span class="n">4</span>
+        </div>
+        <h3>Feche a troca</h3>
+        <p>Dupla confirmação: as figurinhas só trocam de
           dono quando os dois aceitam.</p>
       </article>
     </div>
@@ -137,8 +146,14 @@
 </main>
 
 <script type="module">
-import { CATALOGO } from './assets/js/dados-demo.js';
+import { CATALOGO, RARIDADES } from './assets/js/dados-demo.js';
 import { carta } from './assets/js/components.js';
+
+document.getElementById('numeros').innerHTML = [
+  [CATALOGO.length, 'figurinhas no catálogo'],
+  [new Set(CATALOGO.map(f => f.siglaSelecao)).size, 'seleções'],
+  [Object.keys(RARIDADES).length, 'níveis de raridade']
+].map(([n, rotulo]) => `<div><b>${n}</b><small>${rotulo}</small></div>`).join('');
 
 document.getElementById('sprite').innerHTML =
   await fetch('./assets/icones.svg').then(r => r.text());
