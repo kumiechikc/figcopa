@@ -66,6 +66,15 @@ public class Usuario {
         return sb.toString();
     }
 
+    /**
+     * "fev/2026" para o cartao do parceiro de troca.
+     * A JSTL fmt:formatDate so aceita java.util.Date, e aqui trabalhamos com
+     * LocalDateTime — por isso a formatacao vem pronta do model.
+     */
+    public String getMembroDesde() {
+        return br.com.thechampions.util.Tempo.mesAno(dataCadastro);
+    }
+
     /** Apelido no estilo das telas: "vinicius.k" a partir do e-mail. */
     public String getApelido() {
         if (email == null) return "";
