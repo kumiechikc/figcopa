@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+  <display-name>The Champions</display-name>
+
+  <!-- Os servlets sao mapeados por anotacao (@WebServlet). Este arquivo cuida
+       apenas do que a anotacao nao cobre: pagina inicial, sessao e erros. -->
+
+  <!-- Encoding de TODAS as JSPs, inclusive os fragmentos incluidos com
+       <%@ include %>. Um fragmento incluido nao le a diretiva pageEncoding da
+       pagina que o inclui: sem esta configuracao, os acentos do menu lateral e
+       do rodape chegam ao navegador como "Meu Ãlbum". -->
+  <jsp-config>
+    <jsp-property-group>
+      <url-pattern>*.jsp</url-pattern>
+      <page-encoding>UTF-8</page-encoding>
+    </jsp-property-group>
+  </jsp-config>
+
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+  </welcome-file-list>
+
+  <session-config>
+    <session-timeout>60</session-timeout>
+    <cookie-config>
+      <http-only>true</http-only>
+    </cookie-config>
+  </session-config>
+
+  <error-page>
+    <error-code>404</error-code>
+    <location>/WEB-INF/jsp/erro.jsp</location>
+  </error-page>
+  <error-page>
+    <error-code>500</error-code>
+    <location>/WEB-INF/jsp/erro.jsp</location>
+  </error-page>
+
+</web-app>
